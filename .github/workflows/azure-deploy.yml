@@ -34,6 +34,8 @@ jobs:
       run: |
         cd frontend
         npm run build
+        # Copy built files to static directory (as per README)
+        cp -r dist/* ../static/ || true
     
     # 5. Set up Python environment for backend
     - name: Set up Python
@@ -53,10 +55,11 @@ jobs:
       with:
         name: build-files
         path: |
-          frontend/dist/
+          static/
           backend/
           *.py
           requirements.txt
+          gunicorn.conf.py
     
     # 8. Deploy to Azure App Service
     - name: Deploy to Azure App Service

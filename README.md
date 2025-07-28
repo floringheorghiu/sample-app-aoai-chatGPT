@@ -1,8 +1,9 @@
-# [Preview] Sample Chat App with AOAI
+# Chat App for NGO
 
 This repo contains sample code for a simple chat webapp that integrates with Azure OpenAI. Note: some portions of the app use preview APIs.
 
 ## Prerequisites
+
 - An existing Azure OpenAI resource and model deployment of a chat model (e.g. `gpt-35-turbo-16k`, `gpt-4`)
 - To use Azure OpenAI on your data, one of the following data sources:
   - Azure AI Search Index
@@ -23,6 +24,7 @@ Follow instructions below in the [app configuration](#app-settings) section to c
 After creating your .env file, run one of the following commands in your preferred shell to create a JSON representation of your environment which is recognized by Azure App Service.
 
 #### Powershell
+
 ```powershell
 Get-Content .env | ForEach-Object {   
      if ($_ -match "(?<name>[A-Z_]+)=(?<value>.*)") {   
@@ -36,6 +38,7 @@ Get-Content .env | ForEach-Object { 
 ```
 
 #### Bash
+
 ```bash
 cat .env | jq -R '. | capture("(?<name>[A-Z_]+)=(?<value>.*)")' | jq -s '.[].slotSetting=false' > env.json
 ```
@@ -43,10 +46,12 @@ cat .env | jq -R '. | capture("(?<name>[A-Z_]+)=(?<value>.*)")' | jq -s '.[].slo
 ## Deploy the app
 
 ### Deploy with Azure Developer CLI
+
 Please see [README_azd.md](./README_azd.md) for detailed instructions.
 
 ### One click Azure deployment
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fmicrosoft%2Fsample-app-aoai-chatGPT%2Fmain%2Finfrastructure%2Fdeployment.json)
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Ffloringheorghiu%2Fsample-app-aoai-chatGPT%2Fmain%2Finfrastructure%2Fdeployment.json)
 
 Click on the Deploy to Azure button and configure your settings in the Azure Portal as described in the [Environment variables](#environment-variables) section.
 
@@ -58,11 +63,12 @@ Please see the [section below](#add-an-identity-provider) for important informat
 
 2. Start the app with `start.cmd`. This will build the frontend, install backend dependencies, and then start the app. Or, just run the backend in debug mode using the VSCode debug configuration in `.vscode/launch.json`.
 
-3. You can see the local running app at http://127.0.0.1:50505.
+3. You can see the local running app at <http://127.0.0.1:50505>.
 
 ### Deploy with the Azure CLI
 
 #### Create the Azure App Service
+
 **NOTE**: If you've made code changes, be sure to **build the app code** with `start.cmd` or `start.sh` before you deploy, otherwise your changes will not be picked up. If you've updated any files in the `frontend` folder, make sure you see updates to the files in the `static` folder before you deploy.
 
 You can use the [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/install-azure-cli) to deploy the app from your local machine. Make sure you have version 2.48.1 or later.
@@ -78,23 +84,28 @@ Note: if using the Azure CLI version 2.62 or greater, you may also want to add t
 After creating your Azure App Service, follow these steps to update the configuration to allow your application to properly start up.
 
 1. Set the app startup command
+
 ```
 az webapp config set --startup-file "python3 -m gunicorn app:app" --name <new-app-name>
 ```
+
 2. Set `WEBSITE_WEBDEPLOY_USE_SCM=false` to allow local code deployment.
+
 ```
 az webapp config appsettings set -g <resource-group-name> -n <existing-app-name> --settings WEBSITE_WEBDEPLOY_USE_SCM=false
 ```
+
 3. Set all of your app settings in your local .env file at once by [creating a JSON representation](#create-a-json-file-for-populating-azure-app-service-app-settings) of the .env file, and then run the following command.
+
 ```
 az webapp config appsettings set -g <resource-group-name> -n <existing-app-name> --settings "@env.json"
 ```
 
 #### Update an existing app
 
-Check the runtime stack for your app by viewing the app service resource in the Azure Portal. If it shows "Python - 3.10", use `PYTHON:3.10` in the runtime argument below. If it shows "Python - 3.11", use `PYTHON:3.11` in the runtime argument below. 
+Check the runtime stack for your app by viewing the app service resource in the Azure Portal. If it shows "Python - 3.10", use `PYTHON:3.10` in the runtime argument below. If it shows "Python - 3.11", use `PYTHON:3.11` in the runtime argument below.
 
-Check the SKU in the same way. Use the abbreviated SKU name in the argument below, e.g. for "Basic (B1)" the SKU is `B1`. 
+Check the SKU in the same way. Use the abbreviated SKU name in the argument below, e.g. for "Basic (B1)" the SKU is `B1`.
 
 Then, use these commands to deploy your local code to the existing app:
 
@@ -108,13 +119,14 @@ Deployment will take several minutes. When it completes, you should be able to n
 ## Authentication
 
 ### Add an identity provider
+
 After deployment, you will need to add an identity provider to provide authentication support in your app. See [this tutorial](https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service) for more information.
 
-If you don't add an identity provider, the chat functionality of your app will be blocked to prevent unauthorized access to your resources and data. 
+If you don't add an identity provider, the chat functionality of your app will be blocked to prevent unauthorized access to your resources and data.
 
 To remove this restriction, you can add `AUTH_ENABLED=False` to the environment variables. This will disable authentication and allow anyone to access the chat functionality of your app. **This is not recommended for production apps.**
 
-To add further access controls, update the logic in `getUserInfoList` in `frontend/src/pages/chat/Chat.tsx`. 
+To add further access controls, update the logic in `getUserInfoList` in `frontend/src/pages/chat/Chat.tsx`.
 
 ### Using Microsoft Entra ID
 
@@ -136,6 +148,7 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 ### App Settings
 
 #### Basic Chat Experience
+
 1. Copy `.env.sample` to a new file called `.env` and configure the settings as described in the table below.
 
     | App Setting | Required? | Default Value | Note |
@@ -155,14 +168,13 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 
     See the [documentation](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference#example-response-2) for more information on these parameters.
 
-
 #### Chat with your data
 
 [More information about Azure OpenAI on your data](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/concepts/use-your-data)
 
 #### Chat with your data using Azure Cognitive Search
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
 2. To connect to your data, you need to specify an Azure Cognitive Search index to use. You can [create this index yourself](https://learn.microsoft.com/en-us/azure/search/search-get-started-portal) or use the [Azure AI Studio](https://oai.azure.com/portal/chat) to create the index for you.
 
@@ -194,7 +206,7 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 
 #### Chat with your data using Azure Cosmos DB
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
 2. To connect to your data, you need to specify an Azure Cosmos DB database configuration.  Learn more about [creating an Azure Cosmos DB resource](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/quickstart-portal).
 
@@ -222,7 +234,7 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 
 #### Chat with your data using Elasticsearch (Preview)
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
 2. To connect to your data, you need to specify an Elasticsearch cluster configuration. Learn more about [Elasticsearch](https://www.elastic.co/).
 
@@ -257,7 +269,7 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 
 #### Chat with your data using Pinecone (Private Preview)
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
 2. To connect to your data, you need to specify an Pinecone vector database configuration. Learn more about [Pinecone](https://www.pinecone.io/).
 
@@ -284,7 +296,7 @@ Note: RBAC assignments can take a few minutes before becoming effective.
 
 #### Chat with your data using Mongo DB (Private Preview)
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
 2. To connect to your data, you need to specify an Mongo DB database configuration.  Learn more about [MongoDB](https://www.mongodb.com/).
 
@@ -309,12 +321,12 @@ Note: RBAC assignments can take a few minutes before becoming effective.
     MongoDB uses vector search by default, so ensure these settings are configured on your app:
     - `AZURE_OPENAI_EMBEDDING_NAME`: the name of your Ada (text-embedding-ada-002) model deployment on your Azure OpenAI resource.
     - `MONGODB_VECTOR_COLUMNS`: the vector columns in your index to use when searching. Join them with `|` like `contentVector|titleVector`.
-    
+
 #### Chat with your data using Azure SQL Server (Private Preview)
 
-1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above. 
+1. Update the `AZURE_OPENAI_*` environment variables as described in the [basic chat experience](#basic-chat-experience) above.
 
-2. To enable Azure SQL Server, you will need to set up Azure SQL Server resources.  Refer to this [instruction guide](https://learn.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart) to create an Azure SQL database. 
+2. To enable Azure SQL Server, you will need to set up Azure SQL Server resources.  Refer to this [instruction guide](https://learn.microsoft.com/en-us/azure/azure-sql/database/single-database-create-quickstart) to create an Azure SQL database.
 
 3. Configure data source settings as described in the table below.
 
@@ -334,7 +346,7 @@ Configure your settings using the table below.
 | App Setting | Required? | Default Value | Note |
 | --- | --- | --- | ------------- |
 |USE_PROMPTFLOW|No|False|Use existing Promptflow deployed endpoint. If set to `True` then both `PROMPTFLOW_ENDPOINT` and `PROMPTFLOW_API_KEY` also need to be set.|
-|PROMPTFLOW_ENDPOINT|Only if `USE_PROMPTFLOW` is True||URL of the deployed Promptflow endpoint e.g. https://pf-deployment-name.region.inference.ml.azure.com/score|
+|PROMPTFLOW_ENDPOINT|Only if `USE_PROMPTFLOW` is True||URL of the deployed Promptflow endpoint e.g. <https://pf-deployment-name.region.inference.ml.azure.com/score>|
 |PROMPTFLOW_API_KEY|Only if `USE_PROMPTFLOW` is True||Auth key for deployed Promptflow endpoint. Note: only Key-based authentication is supported.|
 |PROMPTFLOW_RESPONSE_TIMEOUT|No|120|Timeout value in seconds for the Promptflow endpoint to respond.|
 |PROMPTFLOW_REQUEST_FIELD_NAME|No|query|Default field name to construct Promptflow request. Note: chat_history is auto constucted based on the interaction, if your API expects other mandatory field you will need to change the request parameters under `promptflow_request` function.|
@@ -359,7 +371,6 @@ Configure your settings using the table below.
     |AZURE_COSMOSDB_ACCOUNT_KEY|Only if using chat history||The account key for the Azure Cosmos DB account used for storing chat history|
     |AZURE_COSMOSDB_ENABLE_FEEDBACK|No|False|Whether or not to enable message feedback on chat history messages|
 
-
 #### Enable Azure OpenAI function calling via Azure Functions
 
 Refer to this article to learn more about [function calling with Azure OpenAI Service](https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/function-calling).
@@ -372,9 +383,9 @@ Refer to this article to learn more about [function calling with Azure OpenAI Se
 
 4. You will need to create the following Azure Functions to implement function calling logic:
 
-    * Create one function with routing, e.g. /tools, that will return a JSON array with the function definitions.
-    * Create a second function with routing, e.g. /tool, that will execute the functions with the given arguments.
-    The request body will be a JSON structure with the function name and arguments of the function to be executed.   
+    - Create one function with routing, e.g. /tools, that will return a JSON array with the function definitions.
+    - Create a second function with routing, e.g. /tool, that will execute the functions with the given arguments.
+    The request body will be a JSON structure with the function name and arguments of the function to be executed.
     Use this sample as function request body to test your function call:
 
         ```
@@ -384,8 +395,8 @@ Refer to this article to learn more about [function calling with Azure OpenAI Se
         }
         ```
 
-    * Create functions without routing to implement all the functions defined in the JSON definition.
-    
+    - Create functions without routing to implement all the functions defined in the JSON definition.
+
     Sample code for the Azure Functions:
 
     ```
@@ -479,7 +490,6 @@ Refer to this article to learn more about [function calling with Azure OpenAI Se
     | AZURE_OPENAI_FUNCTION_CALL_AZURE_FUNCTIONS_TOOLS_BASE_URL | Only if using function calling |  | The base URL of your Azure Function "tools", e.g. [https://<azure-function-name>.azurewebsites.net/api/tools]() |
     | AZURE_OPENAI_FUNCTION_CALL_AZURE_FUNCTIONS_TOOLS_KEY | Only if using function calling |  | The function key used to access the Azure Function "tools" |
 
-
 #### Common Customization Scenarios (e.g. updating the default chat logo and headers)
 
 The interface allows for easy adaptation of the UI by modifying certain elements, such as the title and logo, through the use of the following environment variables.
@@ -501,11 +511,13 @@ Any custom images assigned to variables `UI_LOGO`, `UI_CHAT_LOGO` or `UI_FAVICON
 Feel free to fork this repository and make your own modifications to the UX or backend logic. You can modify the source (`frontend/src`). For example, you may want to change aspects of the chat display, or expose some of the settings in `app.py` in the UI for users to try out different behaviors. After your code changes, you will need to rebuild the front-end via `start.sh` or `start.cmd`.
 
 ### Scalability
+
 You can configure the number of threads and workers in `gunicorn.conf.py`. After making a change, redeploy your app using the commands listed above.
 
 See the [Oryx documentation](https://github.com/microsoft/Oryx/blob/main/doc/configuration.md) for more details on these settings.
 
 ### Debugging your deployed app
+
 First, add an environment variable on the app service resource called "DEBUG". Set this to "true".
 
 Next, enable logging on the app service. Go to "App Service logs" under Monitoring, and change Application logging to File System. Save the change.
@@ -513,6 +525,7 @@ Next, enable logging on the app service. Go to "App Service logs" under Monitori
 Now, you should be able to see logs from your app by viewing "Log stream" under Monitoring.
 
 ### Changing Citation Display
+
 The Citation panel is defined at the end of `frontend/src/pages/chat/Chat.tsx`. The citations returned from Azure OpenAI On Your Data will include `content`, `title`, `filepath`, and in some cases `url`. You can customize the Citation section to use and display these as you like. For example, the title element is a clickable hyperlink if `url` is not a blob URL.
 
 ```
@@ -532,6 +545,7 @@ The Citation panel is defined at the end of `frontend/src/pages/chat/Chat.tsx`. 
 ```
 
 ## Best Practices
+
 We recommend keeping these best practices in mind:
 
 - Reset the chat session (clear chat) if the user changes any settings. Notify the user that their chat history will be lost.
@@ -545,7 +559,7 @@ We recommend keeping these best practices in mind:
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
-the rights to use your contribution. For details, visit https://cla.opensource.microsoft.com.
+the rights to use your contribution. For details, visit <https://cla.opensource.microsoft.com>.
 
 When you submit a pull request, a CLA bot will automatically determine whether you need to provide
 a CLA and decorate the PR appropriately (e.g., status check, comment). Simply follow the instructions
@@ -555,9 +569,9 @@ This project has adopted the [Microsoft Open Source Code of Conduct](https://ope
 For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or
 contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
 
-When contributing to this repository, please help keep the codebase clean and maintainable by running 
-the formatter and linter with `npm run format` this will run `npx eslint --fix` and `npx prettier --write` 
-on the frontebnd codebase. 
+When contributing to this repository, please help keep the codebase clean and maintainable by running
+the formatter and linter with `npm run format` this will run `npx eslint --fix` and `npx prettier --write`
+on the frontebnd codebase.
 
 If you are using VSCode, you can add the following settings to your `settings.json` to format and lint on save:
 
@@ -573,8 +587,8 @@ If you are using VSCode, you can add the following settings to your `settings.js
 
 ## Trademarks
 
-This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft 
-trademarks or logos is subject to and must follow 
+This project may contain trademarks or logos for projects, products, or services. Authorized use of Microsoft
+trademarks or logos is subject to and must follow
 [Microsoft's Trademark & Brand Guidelines](https://www.microsoft.com/en-us/legal/intellectualproperty/trademarks/usage/general).
 Use of Microsoft trademarks or logos in modified versions of this project must not cause confusion or imply Microsoft sponsorship.
 Any use of third-party trademarks or logos are subject to those third-party's policies.
