@@ -1,0 +1,67 @@
+name: Deploy to Azure App Service
+
+# Trigger conditions
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    # 1. Checkout the repository
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    # 2. Set up Node.js environment for frontend build
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: 'frontend/package-lock.json'
+    
+    # 3. Install frontend dependencies
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        npm install
+    
+    # 4. Build the frontend application
+    - name: Build frontend application
+      run: |
+        cd frontend
+        npm run build
+    
+    # 5. Set up Python environment for backend
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    # 6. Install Python dependencies
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    # 7. Upload build artifacts (optional)
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: build-files
+        path: |
+          frontend/dist/
+          backend/
+          *.py
+          requirements.txt
+    
+    # 8. Deploy to Azure App Service
+    - name: Deploy to Azure App Service
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'naradachat-webapp-v2'
+        publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE }}
+        package: '.'
