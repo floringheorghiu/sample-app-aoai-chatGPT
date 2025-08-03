@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useContext, useLayoutEffect } from 'react'
+import { useRef, useState, useEffect, useContext, useLayoutEffect, Fragment } from 'react'
 import { CommandBarButton, IconButton, Dialog, DialogType, Stack } from '@fluentui/react'
 import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from '@fluentui/react-icons'
 
@@ -12,11 +12,11 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import styles from './Chat.module.css'
-import Contoso from '../../assets/Contoso.svg'
+// Removed Contoso import - using Narada logo directly
 import { XSSAllowTags } from '../../constants/sanatizeAllowables'
 
 import {
-  ChatMessage,
+  ChatMessage as BaseChatMessage,
   ConversationRequest,
   conversationApi,
   Citation,
@@ -32,12 +32,21 @@ import {
   CosmosDBStatus,
   ErrorMessage,
   ExecResults,
-} from "../../api";
-import { Answer } from "../../components/Answer";
-import { QuestionInput } from "../../components/QuestionInput";
-import { ChatHistoryPanel } from "../../components/ChatHistory/ChatHistoryPanel";
-import { AppStateContext } from "../../state/AppProvider";
-import { useBoolean } from "@fluentui/react-hooks";
+  historyMessageFeedback
+} from '../../api'
+
+// Extend ChatMessage to allow citations for assistant messages
+type ChatMessage = BaseChatMessage & {
+  citations?: Citation[]
+}
+import { Answer } from '../../components/Answer'
+import { QuestionInput } from '../../components/QuestionInput'
+import { ChatHistoryPanel } from '../../components/ChatHistory/ChatHistoryPanel'
+import ChatMessageComponent from '../../components/ChatMessage'
+import { AppStateContext } from '../../state/AppProvider'
+import { useBoolean } from '@fluentui/react-hooks'
+import { useAppPersonaTheme } from '../../hooks/usePersonaTheme'
+import { Plus, MessageSquareIcon } from 'lucide-react'
 
 const enum messageStatus {
   NotRunning = 'Not Running',
@@ -49,11 +58,12 @@ const Chat = () => {
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
   const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled
+  const { backgroundClasses } = useAppPersonaTheme()
   const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false)
-  const [activeCitation, setActiveCitation] = useState<Citation>()
-  const [isCitationPanelOpen, setIsCitationPanelOpen] = useState<boolean>(false)
+  const [activeCitations, setActiveCitations] = useState<Citation[]>([])
+  const [isCitationModalOpen, setIsCitationModalOpen] = useState<boolean>(false)
   const [isIntentsPanelOpen, setIsIntentsPanelOpen] = useState<boolean>(false)
   const abortFuncs = useRef([] as AbortController[])
   const [showAuthMessage, setShowAuthMessage] = useState<boolean | undefined>()
@@ -83,6 +93,11 @@ const Chat = () => {
   const [ASSISTANT, TOOL, ERROR] = ['assistant', 'tool', 'error']
   const NO_CONTENT_ERROR = 'No content in messages object.'
 
+  const restartOnboarding = () => {
+    localStorage.clear()
+    window.location.href = '/'
+  }
+
   useEffect(() => {
     if (
       appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.Working &&
@@ -108,7 +123,7 @@ const Chat = () => {
 
   useEffect(() => {
     if (!appStateContext?.state.isLoading) {
-      setLogo(ui?.chat_logo || ui?.logo || Contoso)
+      setLogo(ui?.chat_logo || ui?.logo || '/narada-logo.svg')
     }
   }, [appStateContext?.state.isLoading])
 
@@ -138,11 +153,14 @@ const Chat = () => {
   const parseExecResults = (exec_results_: any): void => {
     if (exec_results_ == undefined) return
     const exec_results = exec_results_.length === 2 ? exec_results_ : exec_results_.splice(2)
-    appStateContext?.dispatch({ type: 'SET_ANSWER_EXEC_RESULT', payload: { answerId: answerId, exec_result: exec_results } })
+    appStateContext?.dispatch({
+      type: 'SET_ANSWER_EXEC_RESULT',
+      payload: { answerId: answerId, exec_result: exec_results }
+    })
   }
 
   const processResultMessage = (resultMessage: ChatMessage, userMessage: ChatMessage, conversationId?: string) => {
-    if (typeof resultMessage.content === "string" && resultMessage.content.includes('all_exec_results')) {
+    if (typeof resultMessage.content === 'string' && resultMessage.content.includes('all_exec_results')) {
       const parsedExecResults = JSON.parse(resultMessage.content) as AzureSqlServerExecResults
       setExecResults(parsedExecResults.all_exec_results)
       assistantMessage.context = JSON.stringify({
@@ -179,13 +197,19 @@ const Chat = () => {
     }
   }
 
-  const makeApiRequestWithoutCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+  const makeApiRequestWithoutCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
 
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
+    const questionContent =
+      typeof question === 'string'
+        ? question
+        : [
+            { type: 'text', text: question[0].text },
+            { type: 'image_url', image_url: { url: question[1].image_url.url } }
+          ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -306,12 +330,18 @@ const Chat = () => {
     return abortController.abort()
   }
 
-  const makeApiRequestWithCosmosDB = async (question: ChatMessage["content"], conversationId?: string) => {
+  const makeApiRequestWithCosmosDB = async (question: ChatMessage['content'], conversationId?: string) => {
     setIsLoading(true)
     setShowLoadingMessage(true)
     const abortController = new AbortController()
     abortFuncs.current.unshift(abortController)
-    const questionContent = typeof question === 'string' ? question : [{ type: "text", text: question[0].text }, { type: "image_url", image_url: { url: question[1].image_url.url } }]
+    const questionContent =
+      typeof question === 'string'
+        ? question
+        : [
+            { type: 'text', text: question[0].text },
+            { type: 'image_url', image_url: { url: question[1].image_url.url } }
+          ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -550,8 +580,8 @@ const Chat = () => {
           payload: appStateContext?.state.currentChat.id
         })
         appStateContext?.dispatch({ type: 'UPDATE_CHAT_HISTORY', payload: appStateContext?.state.currentChat })
-        setActiveCitation(undefined)
-        setIsCitationPanelOpen(false)
+        setActiveCitations([])
+        setIsCitationModalOpen(false)
         setIsIntentsPanelOpen(false)
         setMessages([])
       }
@@ -617,9 +647,9 @@ const Chat = () => {
   const newChat = () => {
     setProcessMessages(messageStatus.Processing)
     setMessages([])
-    setIsCitationPanelOpen(false)
+    setIsCitationModalOpen(false)
     setIsIntentsPanelOpen(false)
-    setActiveCitation(undefined)
+    setActiveCitations([])
     appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: null })
     setProcessMessages(messageStatus.Done)
   }
@@ -628,6 +658,7 @@ const Chat = () => {
     abortFuncs.current.forEach(a => a.abort())
     setShowLoadingMessage(false)
     setIsLoading(false)
+    setProcessMessages(messageStatus.Done)
   }
 
   useEffect(() => {
@@ -701,9 +732,17 @@ const Chat = () => {
     chatMessageStreamEnd.current?.scrollIntoView({ behavior: 'smooth' })
   }, [showLoadingMessage, processMessages])
 
-  const onShowCitation = (citation: Citation) => {
-    setActiveCitation(citation)
-    setIsCitationPanelOpen(true)
+  // Show all citations for the current answer in a modal, mutually exclusive with chat history
+  const onShowCitation = (citations: Citation[]) => {
+    // Debug log
+    // eslint-disable-next-line no-console
+    console.log('Citations for modal:', citations)
+    setActiveCitations(citations)
+    setIsCitationModalOpen(true)
+    // Hide chat history modal if open
+    if (appStateContext?.state.isChatHistoryOpen) {
+      appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })
+    }
   }
 
   const onShowExecResult = (answerId: string) => {
@@ -717,7 +756,7 @@ const Chat = () => {
   }
 
   const parseCitationFromMessage = (message: ChatMessage) => {
-    if (message?.role && message?.role === 'tool' && typeof message?.content === "string") {
+    if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
       try {
         const toolMessage = JSON.parse(message.content) as ToolMessageContent
         return toolMessage.citations
@@ -729,23 +768,22 @@ const Chat = () => {
   }
 
   const parsePlotFromMessage = (message: ChatMessage) => {
-    if (message?.role && message?.role === "tool" && typeof message?.content === "string") {
+    if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
       try {
-        const execResults = JSON.parse(message.content) as AzureSqlServerExecResults;
-        const codeExecResult = execResults.all_exec_results.at(-1)?.code_exec_result;
+        const execResults = JSON.parse(message.content) as AzureSqlServerExecResults
+        const codeExecResult = execResults.all_exec_results.at(-1)?.code_exec_result
 
         if (codeExecResult === undefined) {
-          return null;
+          return null
         }
-        return codeExecResult.toString();
-      }
-      catch {
-        return null;
+        return codeExecResult.toString()
+      } catch {
+        return null
       }
       // const execResults = JSON.parse(message.content) as AzureSqlServerExecResults;
       // return execResults.all_exec_results.at(-1)?.code_exec_result;
     }
-    return null;
+    return null
   }
 
   const disabledButton = () => {
@@ -757,284 +795,524 @@ const Chat = () => {
     )
   }
 
-  return (
-    <div className={styles.container} role="main">
-      {showAuthMessage ? (
-        <Stack className={styles.chatEmptyState}>
-          <ShieldLockRegular
-            className={styles.chatIcon}
-            style={{ color: 'darkorange', height: '200px', width: '200px' }}
-          />
-          <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
-          <h2 className={styles.chatEmptyStateSubtitle}>
-            This app does not have authentication configured. Please add an identity provider by finding your app in the{' '}
-            <a href="https://portal.azure.com/" target="_blank">
-              Azure Portal
-            </a>
-            and following{' '}
-            <a
-              href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization"
-              target="_blank">
-              these instructions
-            </a>
-            .
-          </h2>
-          <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
-            <strong>Authentication configuration takes a few minutes to apply. </strong>
-          </h2>
-          <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
-            <strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong>
-          </h2>
-        </Stack>
-      ) : (
-        <Stack horizontal className={styles.chatRoot}>
-          <div className={styles.chatContainer}>
-            {!messages || messages.length < 1 ? (
-              <Stack className={styles.chatEmptyState}>
-                <img src={logo} className={styles.chatIcon} aria-hidden="true" />
-                <h1 className={styles.chatEmptyStateTitle}>{ui?.chat_title}</h1>
-                <h2 className={styles.chatEmptyStateSubtitle}>{ui?.chat_description}</h2>
-              </Stack>
-            ) : (
-              <div className={styles.chatMessageStream} style={{ marginBottom: isLoading ? '40px' : '0px' }} role="log">
-                {messages.map((answer, index) => (
-                  <>
-                    {answer.role === 'user' ? (
-                      <div className={styles.chatMessageUser} tabIndex={0}>
-                        <div className={styles.chatMessageUserMessage}>
-                          {typeof answer.content === "string" && answer.content ? answer.content : Array.isArray(answer.content) ? <>{answer.content[0].text} <img className={styles.uploadedImageChat} src={answer.content[1].image_url.url} alt="Uploaded Preview" /></> : null}
-                        </div>
-                      </div>
-                    ) : answer.role === 'assistant' ? (
-                      <div className={styles.chatMessageGpt}>
-                        {typeof answer.content === "string" && <Answer
-                          answer={{
-                            answer: answer.content,
-                            citations: parseCitationFromMessage(messages[index - 1]),
-                            generated_chart: parsePlotFromMessage(messages[index - 1]),
-                            message_id: answer.id,
-                            feedback: answer.feedback,
-                            exec_results: execResults
-                          }}
-                          onCitationClicked={c => onShowCitation(c)}
-                          onExectResultClicked={() => onShowExecResult(answerId)}
-                        />}
-                      </div>
-                    ) : answer.role === ERROR ? (
-                      <div className={styles.chatMessageError}>
-                        <Stack horizontal className={styles.chatMessageErrorContent}>
-                          <ErrorCircleRegular className={styles.errorIcon} style={{ color: 'rgba(182, 52, 67, 1)' }} />
-                          <span>Error</span>
-                        </Stack>
-                        <span className={styles.chatMessageErrorContent}>{typeof answer.content === "string" && answer.content}</span>
-                      </div>
-                    ) : null}
-                  </>
-                ))}
-                {showLoadingMessage && (
-                  <>
-                    <div className={styles.chatMessageGpt}>
-                      <Answer
-                        answer={{
-                          answer: "Generating answer...",
-                          citations: [],
-                          generated_chart: null
-                        }}
-                        onCitationClicked={() => null}
-                        onExectResultClicked={() => null}
-                      />
-                    </div>
-                  </>
-                )}
-                <div ref={chatMessageStreamEnd} />
-              </div>
-            )}
+  // Helper: close citation modal and clear citations
+  const closeCitationModal = () => {
+    setIsCitationModalOpen(false)
+    setActiveCitations([])
+  }
 
-            <Stack horizontal className={styles.chatInput}>
-              {isLoading && messages.length > 0 && (
-                <Stack
-                  horizontal
-                  className={styles.stopGeneratingContainer}
-                  role="button"
-                  aria-label="Stop generating"
-                  tabIndex={0}
-                  onClick={stopGenerating}
-                  onKeyDown={e => (e.key === 'Enter' || e.key === ' ' ? stopGenerating() : null)}>
-                  <SquareRegular className={styles.stopGeneratingIcon} aria-hidden="true" />
-                  <span className={styles.stopGeneratingText} aria-hidden="true">
-                    Stop generating
-                  </span>
-                </Stack>
-              )}
-              <Stack>
-                {appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && (
-                  <CommandBarButton
-                    role="button"
-                    styles={{
-                      icon: {
-                        color: '#FFFFFF'
-                      },
-                      iconDisabled: {
-                        color: '#BDBDBD !important'
-                      },
-                      root: {
-                        color: '#FFFFFF',
-                        background:
-                          'radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)'
-                      },
-                      rootDisabled: {
-                        background: '#F0F0F0'
-                      }
-                    }}
-                    className={styles.newChatIcon}
-                    iconProps={{ iconName: 'Add' }}
-                    onClick={newChat}
-                    disabled={disabledButton()}
-                    aria-label="start a new chat button"
-                  />
-                )}
-                <CommandBarButton
-                  role="button"
-                  styles={{
-                    icon: {
-                      color: '#FFFFFF'
-                    },
-                    iconDisabled: {
-                      color: '#BDBDBD !important'
-                    },
-                    root: {
-                      color: '#FFFFFF',
-                      background:
-                        'radial-gradient(109.81% 107.82% at 100.1% 90.19%, #0F6CBD 33.63%, #2D87C3 70.31%, #8DDDD8 100%)'
-                    },
-                    rootDisabled: {
-                      background: '#F0F0F0'
+  return (
+    <div role="main" style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+      {showAuthMessage ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Stack className={styles.chatEmptyState}>
+            <ShieldLockRegular
+              className={styles.chatIcon}
+              style={{ color: 'darkorange', height: '200px', width: '200px' }}
+            />
+            <h1 className={styles.chatEmptyStateTitle}>Authentication Not Configured</h1>
+            <h2 className={styles.chatEmptyStateSubtitle}>
+              This app does not have authentication configured. Please add an identity provider by finding your app in the{' '}
+              <a href="https://portal.azure.com/" target="_blank">
+                Azure Portal
+              </a>
+              and following{' '}
+              <a
+                href="https://learn.microsoft.com/en-us/azure/app-service/scenario-secure-app-authentication-app-service#3-configure-authentication-and-authorization"
+                target="_blank">
+                these instructions
+              </a>
+              .
+            </h2>
+            <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
+              <strong>Authentication configuration takes a few minutes to apply. </strong>
+            </h2>
+            <h2 className={styles.chatEmptyStateSubtitle} style={{ fontSize: '20px' }}>
+              <strong>If you deployed in the last 10 minutes, please wait and reload the page after 10 minutes.</strong>
+            </h2>
+          </Stack>
+        </div>
+      ) : (
+        <div 
+          style={{ 
+            height: '100vh', 
+            display: 'flex', 
+            flexDirection: 'column',
+            transition: 'background-color 0.3s'
+          }}
+          className={backgroundClasses()}
+        >
+          {/* Header with Title and Actions */}
+          <div 
+            style={{
+              flexShrink: 0,
+              backgroundColor: 'white',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+              borderBottom: '1px solid #e5e7eb',
+              padding: '16px 24px',
+              position: 'relative',
+              zIndex: 10
+            }}
+          >
+            <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <h1 style={{ fontSize: '20px', fontWeight: 'bold', color: '#111827', margin: 0 }}>Asistent AI Narada</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <button
+                  onClick={newChat}
+                  disabled={disabledButton()}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    backgroundColor: '#ec4899',
+                    color: 'white',
+                    borderRadius: '9999px',
+                    border: 'none',
+                    cursor: disabledButton() ? 'not-allowed' : 'pointer',
+                    opacity: disabledButton() ? 0.5 : 1,
+                    transition: 'background-color 0.2s',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!disabledButton()) {
+                      e.currentTarget.style.backgroundColor = '#db2777'
                     }
                   }}
-                  className={
-                    appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured
-                      ? styles.clearChatBroom
-                      : styles.clearChatBroomNoCosmos
-                  }
-                  iconProps={{ iconName: 'Broom' }}
-                  onClick={
-                    appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured
-                      ? clearChat
-                      : newChat
-                  }
-                  disabled={disabledButton()}
-                  aria-label="clear chat button"
+                  onMouseLeave={(e) => {
+                    if (!disabledButton()) {
+                      e.currentTarget.style.backgroundColor = '#ec4899'
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Conversație nouă
+                </button>
+                <CommandBarButton
+                  role="button"
+                  text="Restart Onboarding"
+                  onClick={restartOnboarding}
+                  styles={{
+                    root: {
+                      background: '#f0f0f0',
+                      color: '#333',
+                      borderRadius: 9999,
+                      padding: '8px 16px',
+                      border: 'none'
+                    },
+                    rootHovered: { background: '#e0e0e0' },
+                    textContainer: { fontSize: 14, fontWeight: 600 }
+                  }}
                 />
-                <Dialog
-                  hidden={hideErrorDialog}
-                  onDismiss={handleErrorDialogClose}
-                  dialogContentProps={errorDialogContentProps}
-                  modalProps={modalProps}></Dialog>
-              </Stack>
-              <QuestionInput
-                clearOnSend
-                placeholder="Type a new question..."
-                disabled={isLoading}
-                onSend={(question, id) => {
-                  appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                    ? makeApiRequestWithCosmosDB(question, id)
-                    : makeApiRequestWithoutCosmosDB(question, id)
-                }}
-                conversationId={
-                  appStateContext?.state.currentChat?.id ? appStateContext?.state.currentChat?.id : undefined
-                }
-              />
-            </Stack>
+                <button
+                  onClick={() => appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '8px 16px',
+                    fontSize: '14px',
+                    fontWeight: '600',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '9999px',
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f9fafb'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'white'
+                  }}
+                >
+                  <MessageSquareIcon className="w-4 h-4" />
+                  Istoric conversații
+                </button>
+                <button
+                  onClick={stopGenerating}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '6px 12px',
+                    fontSize: '14px',
+                    color: '#4b5563',
+                    backgroundColor: '#f3f4f6',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'background-color 0.2s'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#e5e7eb'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f3f4f6'
+                  }}
+                >
+                  <SquareRegular className="w-4 h-4" />
+                  Stop generating
+                </button>
+              </div>
+            </div>
           </div>
-          {/* Citation Panel */}
-          {messages && messages.length > 0 && isCitationPanelOpen && activeCitation && (
-            <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Citations Panel">
-              <Stack
-                aria-label="Citations Panel Header Container"
-                horizontal
-                className={styles.citationPanelHeaderContainer}
-                horizontalAlign="space-between"
-                verticalAlign="center">
-                <span aria-label="Citations" className={styles.citationPanelHeader}>
-                  Citations
-                </span>
-                <IconButton
-                  iconProps={{ iconName: 'Cancel' }}
-                  aria-label="Close citations panel"
-                  onClick={() => setIsCitationPanelOpen(false)}
-                />
-              </Stack>
-              <h5
-                className={styles.citationPanelTitle}
-                tabIndex={0}
-                title={
-                  activeCitation.url && !activeCitation.url.includes('blob.core')
-                    ? activeCitation.url
-                    : activeCitation.title ?? ''
-                }
-                onClick={() => onViewSource(activeCitation)}>
-                {activeCitation.title}
-              </h5>
-              <div tabIndex={0}>
-                <ReactMarkdown
-                  linkTarget="_blank"
-                  className={styles.citationPanelContent}
-                  children={DOMPurify.sanitize(activeCitation.content, { ALLOWED_TAGS: XSSAllowTags })}
-                  remarkPlugins={[remarkGfm]}
-                  rehypePlugins={[rehypeRaw]}
+
+          {/* Messages Area */}
+          <div 
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              minHeight: 0
+            }}
+          >
+            <div style={{ maxWidth: '1024px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+              {!messages || messages.length < 1 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {/* Welcome Message */}
+                  <div className={styles['animate-fade-in']} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                    <div style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '50%',
+                      backgroundColor: 'white',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #e5e7eb',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0
+                    }}>
+                      <img
+                        src="/avatars/chatbot_avatar.svg"
+                        alt="AI Assistant"
+                        style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                        onError={e => {
+                          e.currentTarget.src = '/narada-logo.svg'
+                        }}
+                      />
+                    </div>
+                    <div style={{
+                      backgroundColor: 'white',
+                      borderRadius: '16px',
+                      borderTopLeftRadius: '6px',
+                      padding: '20px',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #e5e7eb',
+                      maxWidth: '512px'
+                    }}>
+                      <p style={{
+                        color: '#1f2937',
+                        fontSize: '16px',
+                        lineHeight: '1.6',
+                        margin: 0
+                      }}>
+                        Bun venit! Sunt asistentul tău AI Narada. Văd că ești un elev interesat cum să îmi înțeleg
+                        emoțiile și să depășesc momentele grele. Cum te pot ajuta astăzi?
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Questions */}
+                  <div style={{ marginLeft: '52px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.2s' }}>
+                      <div style={{ maxWidth: '512px' }}>
+                        <button
+                          onClick={() => {
+                            const question = 'Cum pot vorbi despre ce simt fără să-mi fie rușine?'
+                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                              ? makeApiRequestWithCosmosDB(question)
+                              : makeApiRequestWithoutCosmosDB(question)
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '16px',
+                            textAlign: 'left',
+                            backgroundColor: 'white',
+                            borderRadius: '16px',
+                            border: '1px solid #e5e7eb',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb'
+                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'white'
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
+                            Cum pot vorbi despre ce simt fără să-mi fie rușine?
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.4s' }}>
+                      <div style={{ maxWidth: '512px' }}>
+                        <button
+                          onClick={() => {
+                            const question = 'Cum mă pot calma înainte de un test sau o prezentare?'
+                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                              ? makeApiRequestWithCosmosDB(question)
+                              : makeApiRequestWithoutCosmosDB(question)
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '16px',
+                            textAlign: 'left',
+                            backgroundColor: 'white',
+                            borderRadius: '16px',
+                            border: '1px solid #e5e7eb',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb'
+                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'white'
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
+                            Cum mă pot calma înainte de un test sau o prezentare?
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.6s' }}>
+                      <div style={{ maxWidth: '512px' }}>
+                        <button
+                          onClick={() => {
+                            const question = 'Ce fac când mă simt copleșit de teme și responsabilități?'
+                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                              ? makeApiRequestWithCosmosDB(question)
+                              : makeApiRequestWithoutCosmosDB(question)
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '16px',
+                            textAlign: 'left',
+                            backgroundColor: 'white',
+                            borderRadius: '16px',
+                            border: '1px solid #e5e7eb',
+                            cursor: 'pointer',
+                            transition: 'all 0.3s',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb'
+                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'white'
+                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
+                            Ce fac când mă simt copleșit de teme și responsabilități?
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  {messages.map((message, index) => {
+                    if (message.role === 'user') {
+                      return (
+                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                          <div style={{
+                            maxWidth: '512px',
+                            padding: '12px 20px',
+                            borderRadius: '16px',
+                            backgroundColor: '#ec4899',
+                            color: 'white',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <ChatMessageComponent
+                              message={message}
+                              isStreaming={false}
+                              sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
+                            />
+                          </div>
+                        </div>
+                      )
+                    } else if (message.role === 'assistant') {
+                      const citations = parseCitationFromMessage(message)
+                      let filteredCitations: Citation[] = []
+                      if (citations && citations.length > 0) {
+                        filteredCitations = citations
+                      }
+                      return (
+                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#e5e7eb',
+                            borderRadius: '50%'
+                          }}>
+                            <img src={logo} alt="Narada Logo" style={{ width: '24px', height: '24px' }} />
+                          </div>
+                          <div style={{
+                            maxWidth: '768px',
+                            padding: '20px',
+                            borderRadius: '16px',
+                            backgroundColor: '#f3f4f6',
+                            color: '#1f2937',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <ChatMessageComponent
+                              message={{ ...message, citations: filteredCitations }}
+                              isStreaming={false}
+                              onCitationClick={() => onShowCitation(filteredCitations)}
+                              sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
+                            />
+                          </div>
+                        </div>
+                      )
+                    } else if (message.role === 'error') {
+                      return (
+                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            backgroundColor: '#fecaca',
+                            borderRadius: '50%'
+                          }}>
+                            <img src={logo} alt="Narada Logo" style={{ width: '24px', height: '24px' }} />
+                          </div>
+                          <div style={{
+                            maxWidth: '768px',
+                            padding: '20px',
+                            borderRadius: '16px',
+                            backgroundColor: '#fef2f2',
+                            border: '1px solid #fecaca',
+                            color: '#991b1b',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                          }}>
+                            <div style={{ fontSize: '14px' }}>
+                              {typeof message.content === 'string' ? message.content : ''}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    } else {
+                      return null
+                    }
+                  })}
+                </div>
+              )}
+              <div ref={chatMessageStreamEnd} />
+            </div>
+          </div>
+
+          {/* Input Area - FIXED AT BOTTOM */}
+          <div 
+            style={{
+              flexShrink: 0,
+              backgroundColor: 'white',
+              borderTop: '1px solid #e5e7eb',
+              padding: '16px 24px',
+              position: 'relative'
+            }}
+          >
+            <div style={{ maxWidth: '1024px', margin: '0 auto', position: 'relative', height: '120px' }}>
+              <div style={{ position: 'relative', height: '100%' }}>
+                <QuestionInput
+                  placeholder="Întreabă-mă orice..."
+                  disabled={processMessages === messageStatus.Processing}
+                  onSend={(question, id) => {
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                      ? makeApiRequestWithCosmosDB(question, id)
+                      : makeApiRequestWithoutCosmosDB(question, id)
+                  }}
+                  conversationId={appStateContext?.state.currentChat?.id || undefined}
                 />
               </div>
-            </Stack.Item>
+            </div>
+          </div>
+
+          {/* Chat History Panel */}
+          {appStateContext?.state.isChatHistoryOpen && (
+            <div className={styles['chat-history-modal-overlay']}>
+              <div className={styles['citation-modal-panel']}>
+                <ChatHistoryPanel />
+              </div>
+              <div className={styles['chat-history-modal-backdrop']} onClick={() => appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })} />
+            </div>
           )}
-          {messages && messages.length > 0 && isIntentsPanelOpen && (
-            <Stack.Item className={styles.citationPanel} tabIndex={0} role="tabpanel" aria-label="Intents Panel">
-              <Stack
-                aria-label="Intents Panel Header Container"
-                horizontal
-                className={styles.citationPanelHeaderContainer}
-                horizontalAlign="space-between"
-                verticalAlign="center">
-                <span aria-label="Intents" className={styles.citationPanelHeader}>
-                  Intents
-                </span>
-                <IconButton
-                  iconProps={{ iconName: 'Cancel' }}
-                  aria-label="Close intents panel"
-                  onClick={() => setIsIntentsPanelOpen(false)}
-                />
-              </Stack>
-              <Stack horizontalAlign="space-between">
-                {appStateContext?.state?.answerExecResult[answerId]?.map((execResult: ExecResults, index) => (
-                  <Stack className={styles.exectResultList} verticalAlign="space-between">
-                    <><span>Intent:</span> <p>{execResult.intent}</p></>
-                    {execResult.search_query && <><span>Search Query:</span>
-                      <SyntaxHighlighter
-                        style={nord}
-                        wrapLines={true}
-                        lineProps={{ style: { wordBreak: 'break-all', whiteSpace: 'pre-wrap' } }}
-                        language="sql"
-                        PreTag="p">
-                        {execResult.search_query}
-                      </SyntaxHighlighter></>}
-                    {execResult.search_result && <><span>Search Result:</span> <p>{execResult.search_result}</p></>}
-                    {execResult.code_generated && <><span>Code Generated:</span>
-                      <SyntaxHighlighter
-                        style={nord}
-                        wrapLines={true}
-                        lineProps={{ style: { wordBreak: 'break-all', whiteSpace: 'pre-wrap' } }}
-                        language="python"
-                        PreTag="p">
-                        {execResult.code_generated}
-                      </SyntaxHighlighter>
-                    </>}
+
+          {/* Citations Panel */}
+          {isCitationModalOpen && activeCitations.length > 0 && (
+            <div className={styles['chat-history-modal-overlay']}>
+              <div className={styles['citation-modal-panel']}>
+                <div className={styles.citationPanel} tabIndex={0} role="dialog" aria-label="Citation Panel">
+                  <Stack
+                    aria-label="Citation Panel Header Container"
+                    horizontal
+                    className={styles.citationPanelHeaderContainer}
+                    horizontalAlign="space-between"
+                    verticalAlign="center">
+                    <span aria-label="Citations" className={styles.citationPanelHeader}>
+                      Citations
+                    </span>
+                    <IconButton
+                      iconProps={{ iconName: 'Cancel' }}
+                      aria-label="Close citations panel"
+                      onClick={closeCitationModal}
+                    />
                   </Stack>
-                ))}
-              </Stack>
-            </Stack.Item>
+                  <div className={styles.citationPanelBody}>
+                    {activeCitations.map((citation, index) => (
+                      <Fragment key={uuid()}>
+                        <h5
+                          className={styles.citationPanelTitle}
+                          tabIndex={0}
+                          title={citation.url || undefined}
+                          onClick={() => onViewSource(citation)}
+                          style={{
+                            cursor: citation.url && !citation.url.includes('blob.core') ? 'pointer' : 'default'
+                          }}>
+                          {citation.title}
+                        </h5>
+                        <div tabIndex={0} style={{ marginBottom: 24 }}>
+                          <ReactMarkdown
+                            linkTarget="_blank"
+                            className={styles.citationPanelContent}
+                            children={DOMPurify.sanitize(citation.content, { ALLOWED_TAGS: XSSAllowTags })}
+                            remarkPlugins={[remarkGfm]}
+                            rehypePlugins={[rehypeRaw]}
+                          />
+                        </div>
+                      </Fragment>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className={styles['chat-history-modal-backdrop']} onClick={closeCitationModal} />
+            </div>
           )}
-          {appStateContext?.state.isChatHistoryOpen &&
-            appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured && <ChatHistoryPanel />}
-        </Stack>
+        </div>
       )}
     </div>
   )

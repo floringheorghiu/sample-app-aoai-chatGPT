@@ -1,9 +1,77 @@
-.container {
-  flex: 1;
+/* Animations */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out;
+  animation-fill-mode: both;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in {
+    animation: fadeInReduced 0.2s ease-out;
+    animation-fill-mode: both;
+  }
+  
+  @keyframes fadeInReduced {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}
+
+/* Utility classes */
+.ml-13 {
+  margin-left: 3.25rem; /* 52px - to align with message content after avatar */
+}
+
+/* Modal overlay for chat history panel */
+
+.chat-history-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9999;
+  pointer-events: auto;
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+.chat-history-modal-panel {
+  height: 100vh;
+  width: 340px;
+  background: #fff;
+  box-shadow: -2px 0 16px rgba(0,0,0,0.18);
+  z-index: 10001;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
+  overflow-y: auto;
 }
+
+.chat-history-modal-backdrop {
+  flex: 1 1 auto;
+  background: rgba(0,0,0,0.18);
+  height: 100vh;
+  pointer-events: auto;
+}
+/* Removed old container styles that were causing layout issues */
 
 .chatRoot {
   flex: 1;
@@ -19,14 +87,8 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  background: radial-gradient(108.78% 108.78% at 50.02% 19.78%, #ffffff 57.29%, #eef6fe 100%);
-  box-shadow:
-    0px 2px 4px rgba(0, 0, 0, 0.14),
-    0px 0px 2px rgba(0, 0, 0, 0.12);
-  border-radius: 8px;
-  overflow-y: auto;
-  max-height: calc(100vh - 100px);
+  height: 100vh;
+  /* Background will be set by persona theming */
 }
 
 .chatEmptyState {
