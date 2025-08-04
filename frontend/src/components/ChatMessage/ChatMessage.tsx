@@ -166,14 +166,16 @@ const AssistantMessage: React.FC<AssistantMessageProps> = ({
               </ReactMarkdown>
             </div>
 
-            {/* Citation Button - always visible, triggers modal in Chat.tsx */}
-            <button
-              className="mt-3 px-3 py-1 text-xs rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition"
-              onClick={() => onCitationClick && onCitationClick(citations)}
-              type="button"
-            >
-              Arată citările
-            </button>
+            {/* Citation Button - only show when citations exist */}
+            {citations && citations.length > 0 && (
+              <button
+                className="mt-3 px-3 py-1 text-xs rounded bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 transition"
+                onClick={() => onCitationClick && onCitationClick(citations)}
+                type="button"
+              >
+                Arată citările
+              </button>
+            )}
           </div>
 
           {/* Message Footer */}

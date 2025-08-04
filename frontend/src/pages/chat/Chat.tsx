@@ -74,7 +74,7 @@ const Chat = () => {
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
   const AUTH_ENABLED = appStateContext?.state.frontendSettings?.auth_enabled
-  const { backgroundClasses } = useAppPersonaTheme()
+  const { backgroundClasses, messageClasses } = useAppPersonaTheme()
   const chatMessageStreamEnd = useRef<HTMLDivElement | null>(null)
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false)
@@ -1004,14 +1004,16 @@ const Chat = () => {
                     if (message.role === 'user') {
                       return (
                         <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: '12px' }}>
-                          <div style={{
-                            maxWidth: '512px',
-                            padding: '12px 20px',
-                            borderRadius: '16px',
-                            backgroundColor: '#ec4899',
-                            color: 'white',
-                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
-                          }}>
+                          <div 
+                            className={messageClasses(true, 'max-w-[512px]')}
+                            style={{
+                              borderRadius: '16px',
+                              borderTopRightRadius: '6px',
+                              padding: '20px',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                              border: '1px solid rgba(255, 255, 255, 0.2)'
+                            }}
+                          >
                             <ChatMessageComponent
                               message={message}
                               isStreaming={false}
@@ -1040,7 +1042,14 @@ const Chat = () => {
                         </div>
                       )
                     } else if (message.role === 'assistant') {
-                      const citations = parseCitationFromMessage(message)
+                      // Look for citations in the most recent tool message before this assistant message
+                      let citations: Citation[] = []
+                      for (let i = index - 1; i >= 0; i--) {
+                        if (messages[i].role === 'tool') {
+                          citations = parseCitationFromMessage(messages[i])
+                          break
+                        }
+                      }
                       let filteredCitations: Citation[] = []
                       if (citations && citations.length > 0) {
                         filteredCitations = citations
@@ -1164,10 +1173,9 @@ const Chat = () => {
                 <button
                   onClick={() => {
                     const question = 'Cum pot vorbi despre ce simt fără să-mi fie rușine?'
-                    const id = uuid()
                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question, id)
-                      : makeApiRequestWithoutCosmosDB(question, id)
+                      ? makeApiRequestWithCosmosDB(question)
+                      : makeApiRequestWithoutCosmosDB(question)
                   }}
                   style={{
                     minWidth: '200px',
@@ -1191,10 +1199,9 @@ const Chat = () => {
                 <button
                   onClick={() => {
                     const question = 'Cum mă pot calma înainte de un test sau o prezentare?'
-                    const id = uuid()
                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question, id)
-                      : makeApiRequestWithoutCosmosDB(question, id)
+                      ? makeApiRequestWithCosmosDB(question)
+                      : makeApiRequestWithoutCosmosDB(question)
                   }}
                   style={{
                     minWidth: '200px',
@@ -1218,10 +1225,9 @@ const Chat = () => {
                 <button
                   onClick={() => {
                     const question = 'Ce fac când mă simt copleșit de teme și responsabilități?'
-                    const id = uuid()
                     appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question, id)
-                      : makeApiRequestWithoutCosmosDB(question, id)
+                      ? makeApiRequestWithCosmosDB(question)
+                      : makeApiRequestWithoutCosmosDB(question)
                   }}
                   style={{
                     minWidth: '200px',
@@ -1285,7 +1291,7 @@ const Chat = () => {
           {/* Citations Panel */}
           {isCitationModalOpen && activeCitations.length > 0 && (
             <div className={styles['chat-history-modal-overlay']}>
-              <div className={styles['citation-modal-panel']}>
+              <div className={styles['chat-history-modal-panel']}>
                 <div className={styles.citationPanel} tabIndex={0} role="dialog" aria-label="Citation Panel">
                   <Stack
                     aria-label="Citation Panel Header Container"
