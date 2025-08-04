@@ -7,6 +7,7 @@ import { CosmosDBStatus } from '../../api'
 import Contoso from '../../assets/narada-logo.svg'
 import { HistoryButton, ShareButton } from '../../components/common/Button'
 import { AppStateContext } from '../../state/AppProvider'
+import { useDynamicTitle } from '../../hooks/useDynamicTitle'
 
 import styles from './Layout.module.css'
 
@@ -20,6 +21,7 @@ const Layout = () => {
   const [logo, setLogo] = useState('')
   const appStateContext = useContext(AppStateContext)
   const ui = appStateContext?.state.frontendSettings?.ui
+  const dynamicTitle = useDynamicTitle()
 
   const handleShareClick = () => {
     setIsSharePanelOpen(true)
@@ -82,9 +84,8 @@ const Layout = () => {
         <header className={styles.header} role={'banner'}>
           <Stack horizontal verticalAlign="center" horizontalAlign="space-between">
             <Stack horizontal verticalAlign="center">
-              <img src={logo} className={styles.headerIcon} aria-hidden="true" alt="" />
               <Link to="/" className={styles.headerTitleContainer}>
-                <h1 className={styles.headerTitle}>{ui?.title}</h1>
+                <h1 className={styles.headerTitle}>{dynamicTitle}</h1>
               </Link>
             </Stack>
             <Stack horizontal tokens={{ childrenGap: 4 }} className={styles.shareButtonContainer}>

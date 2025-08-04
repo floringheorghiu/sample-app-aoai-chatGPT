@@ -223,9 +223,9 @@ const Chat = () => {
       typeof question === 'string'
         ? question
         : [
-            { type: 'text', text: question[0].text },
-            { type: 'image_url', image_url: { url: question[1].image_url.url } }
-          ]
+          { type: 'text', text: question[0].text },
+          { type: 'image_url', image_url: { url: question[1].image_url.url } }
+        ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -355,9 +355,9 @@ const Chat = () => {
       typeof question === 'string'
         ? question
         : [
-            { type: 'text', text: question[0].text },
-            { type: 'image_url', image_url: { url: question[1].image_url.url } }
-          ]
+          { type: 'text', text: question[0].text },
+          { type: 'image_url', image_url: { url: question[1].image_url.url } }
+        ]
     question = typeof question !== 'string' && question[0]?.text?.length > 0 ? question[0].text : question
 
     const userMessage: ChatMessage = {
@@ -849,17 +849,17 @@ const Chat = () => {
           </Stack>
         </div>
       ) : (
-        <div 
-          style={{ 
-            height: '100vh', 
-            display: 'flex', 
+        <div
+          style={{
+            height: '100vh',
+            display: 'flex',
             flexDirection: 'column',
             transition: 'background-color 0.3s'
           }}
           className={backgroundClasses()}
         >
           {/* Header with Title and Actions */}
-          <div 
+          <div
             style={{
               flexShrink: 0,
               backgroundColor: 'white',
@@ -938,7 +938,7 @@ const Chat = () => {
           </div>
 
           {/* Messages Area */}
-          <div 
+          <div
             style={{
               flex: 1,
               overflowY: 'auto',
@@ -996,150 +996,150 @@ const Chat = () => {
 
                   {/* Quick questions moved to input area */}
                 </div>
-                
+
                 {/* User Messages - Show below welcome message */}
                 {messages && messages.length > 0 && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                     {messages.map((message, index) => {
-                    if (message.role === 'user') {
-                      return (
-                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: '12px' }}>
-                          <div 
-                            className={messageClasses(true, 'max-w-[512px]')}
-                            style={{
-                              borderRadius: '16px',
-                              borderTopRightRadius: '6px',
-                              padding: '20px',
+                      if (message.role === 'user') {
+                        return (
+                          <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: '12px' }}>
+                            <div
+                              className={messageClasses(true, 'max-w-[512px]')}
+                              style={{
+                                borderRadius: '16px',
+                                borderTopRightRadius: '6px',
+                                padding: '20px',
+                                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                                border: '1px solid rgba(255, 255, 255, 0.2)'
+                              }}
+                            >
+                              <ChatMessageComponent
+                                message={message}
+                                isStreaming={false}
+                                sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
+                              />
+                            </div>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: 'white',
                               boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                              border: '1px solid rgba(255, 255, 255, 0.2)'
-                            }}
-                          >
-                            <ChatMessageComponent
-                              message={message}
-                              isStreaming={false}
-                              sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
-                            />
-                          </div>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: 'white',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid #e5e7eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}>
-                            <img 
-                              src={getPersonaAvatar(appStateContext?.state.currentPersona)} 
-                              alt="User Avatar" 
-                              style={{ width: '24px', height: '24px', objectFit: 'contain' }} 
-                            />
-                          </div>
-                        </div>
-                      )
-                    } else if (message.role === 'assistant') {
-                      // Look for citations in the most recent tool message before this assistant message
-                      let citations: Citation[] = []
-                      for (let i = index - 1; i >= 0; i--) {
-                        if (messages[i].role === 'tool') {
-                          citations = parseCitationFromMessage(messages[i])
-                          break
-                        }
-                      }
-                      let filteredCitations: Citation[] = []
-                      if (citations && citations.length > 0) {
-                        filteredCitations = citations
-                      }
-                      return (
-                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: 'white',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid #e5e7eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}>
-                            <img 
-                              src="/avatars/chatbot_avatar.svg" 
-                              alt="AI Assistant" 
-                              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
-                              onError={e => {
-                                e.currentTarget.src = '/narada-logo.svg'
-                              }}
-                            />
-                          </div>
-                          <div style={{
-                            backgroundColor: '#FFFFFF',
-                            borderRadius: '16px',
-                            borderTopLeftRadius: '6px',
-                            padding: '20px',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid #e5e7eb',
-                            color: '#1f2937',
-                            maxWidth: '768px'
-                          }}>
-                            <ChatMessageComponent
-                              message={{ ...message, citations: filteredCitations }}
-                              isStreaming={false}
-                              onCitationClick={() => onShowCitation(filteredCitations)}
-                              sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
-                            />
-                          </div>
-                        </div>
-                      )
-                    } else if (message.role === 'error') {
-                      return (
-                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                          <div style={{
-                            width: '40px',
-                            height: '40px',
-                            borderRadius: '50%',
-                            backgroundColor: 'white',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                            border: '1px solid #e5e7eb',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            overflow: 'hidden',
-                            flexShrink: 0
-                          }}>
-                            <img 
-                              src="/avatars/chatbot_avatar.svg" 
-                              alt="AI Assistant" 
-                              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
-                              onError={e => {
-                                e.currentTarget.src = '/narada-logo.svg'
-                              }}
-                            />
-                          </div>
-                          <div style={{
-                            maxWidth: '768px',
-                            padding: '20px',
-                            borderRadius: '16px',
-                            backgroundColor: '#fef2f2',
-                            border: '1px solid #fecaca',
-                            color: '#991b1b',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}>
-                            <div style={{ fontSize: '14px' }}>
-                              {typeof message.content === 'string' ? message.content : ''}
+                              border: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0
+                            }}>
+                              <img
+                                src={getPersonaAvatar(appStateContext?.state.currentPersona)}
+                                alt="User Avatar"
+                                style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                              />
                             </div>
                           </div>
-                        </div>
-                      )
-                    } else {
-                      return null
-                    }
+                        )
+                      } else if (message.role === 'assistant') {
+                        // Look for citations in the most recent tool message before this assistant message
+                        let citations: Citation[] = []
+                        for (let i = index - 1; i >= 0; i--) {
+                          if (messages[i].role === 'tool') {
+                            citations = parseCitationFromMessage(messages[i])
+                            break
+                          }
+                        }
+                        let filteredCitations: Citation[] = []
+                        if (citations && citations.length > 0) {
+                          filteredCitations = citations
+                        }
+                        return (
+                          <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: 'white',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                              border: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0
+                            }}>
+                              <img
+                                src="/avatars/chatbot_avatar.svg"
+                                alt="AI Assistant"
+                                style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                                onError={e => {
+                                  e.currentTarget.src = '/narada-logo.svg'
+                                }}
+                              />
+                            </div>
+                            <div style={{
+                              backgroundColor: '#FFFFFF',
+                              borderRadius: '16px',
+                              borderTopLeftRadius: '6px',
+                              padding: '20px',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                              border: '1px solid #e5e7eb',
+                              color: '#1f2937',
+                              maxWidth: '768px'
+                            }}>
+                              <ChatMessageComponent
+                                message={{ ...message, citations: filteredCitations }}
+                                isStreaming={false}
+                                onCitationClick={() => onShowCitation(filteredCitations)}
+                                sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
+                              />
+                            </div>
+                          </div>
+                        )
+                      } else if (message.role === 'error') {
+                        return (
+                          <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: 'white',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                              border: '1px solid #e5e7eb',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              overflow: 'hidden',
+                              flexShrink: 0
+                            }}>
+                              <img
+                                src="/avatars/chatbot_avatar.svg"
+                                alt="AI Assistant"
+                                style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                                onError={e => {
+                                  e.currentTarget.src = '/narada-logo.svg'
+                                }}
+                              />
+                            </div>
+                            <div style={{
+                              maxWidth: '768px',
+                              padding: '20px',
+                              borderRadius: '16px',
+                              backgroundColor: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#991b1b',
+                              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                            }}>
+                              <div style={{ fontSize: '14px' }}>
+                                {typeof message.content === 'string' ? message.content : ''}
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      } else {
+                        return null
+                      }
                     })}
                   </div>
                 )}
@@ -1151,8 +1151,7 @@ const Chat = () => {
           {/* Quick Questions - Horizontal Scroll */}
           {messages.length === 0 && (
             <div style={{
-              padding: '0 24px 16px 24px',
-              backgroundColor: 'white'
+              padding: '0 24px 16px 24px'
             }}>
               <div style={{
                 display: 'flex',
@@ -1162,8 +1161,8 @@ const Chat = () => {
                 msOverflowStyle: 'none', // IE/Edge
                 paddingBottom: '4px'
               }}
-              // Hide scrollbar for Webkit browsers
-              className="quick-questions-scroll"
+                // Hide scrollbar for Webkit browsers
+                className="quick-questions-scroll"
               >
                 <style jsx>{`
                   .quick-questions-scroll::-webkit-scrollbar {
@@ -1253,7 +1252,7 @@ const Chat = () => {
           )}
 
           {/* Input Area - FIXED AT BOTTOM */}
-          <div 
+          <div
             style={{
               flexShrink: 0,
               backgroundColor: 'white',
