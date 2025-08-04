@@ -6,3 +6,8 @@ env.json
 .azure/
 __pycache__/
 .ipynb_checkpoints/
+# documentation
+V0_INTEGRATION_GUIDE.md
+V0_SPECIFIC_REQUESTS.md
+FRONTEND_REFACTOR_PRD.md
+narada_admin_dashboard_prd.md

@@ -1,0 +1,14 @@
+.pageTransition {
+  width: 100%;
+  height: 100%;
+}
+
+.visible,
+.slideInRight,
+.slideInLeft,
+.slideOutLeft,
+.slideOutRight {
+  opacity: 1;
+}
+
+/* No animations needed - instant transitions */

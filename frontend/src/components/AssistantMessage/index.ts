@@ -1,0 +1,1 @@
+export { AssistantMessage, default } from './AssistantMessage'

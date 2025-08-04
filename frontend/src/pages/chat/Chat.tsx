@@ -48,6 +48,22 @@ import { useBoolean } from '@fluentui/react-hooks'
 import { useAppPersonaTheme } from '../../hooks/usePersonaTheme'
 import { Plus, MessageSquareIcon } from 'lucide-react'
 
+// Avatar mapping based on persona
+const getPersonaAvatar = (persona: string | null) => {
+  switch (persona) {
+    case 'elev':
+      return '/avatars/child_avatar.svg'
+    case 'părinte':
+      return '/avatars/parent_avatar.svg'
+    case 'profesor':
+      return '/avatars/teacher_avatar.svg'
+    case 'incognito':
+      return '/avatars/incognito_avatar.svg'
+    default:
+      return '/avatars/child_avatar.svg' // Default fallback
+  }
+}
+
 const enum messageStatus {
   NotRunning = 'Not Running',
   Processing = 'Processing',
@@ -890,22 +906,6 @@ const Chat = () => {
                   <Plus className="w-4 h-4" />
                   Conversație nouă
                 </button>
-                <CommandBarButton
-                  role="button"
-                  text="Restart Onboarding"
-                  onClick={restartOnboarding}
-                  styles={{
-                    root: {
-                      background: '#f0f0f0',
-                      color: '#333',
-                      borderRadius: 9999,
-                      padding: '8px 16px',
-                      border: 'none'
-                    },
-                    rootHovered: { background: '#e0e0e0' },
-                    textContainer: { fontSize: 14, fontWeight: 600 }
-                  }}
-                />
                 <button
                   onClick={() => appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })}
                   style={{
@@ -933,31 +933,6 @@ const Chat = () => {
                   <MessageSquareIcon className="w-4 h-4" />
                   Istoric conversații
                 </button>
-                <button
-                  onClick={stopGenerating}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '6px 12px',
-                    fontSize: '14px',
-                    color: '#4b5563',
-                    backgroundColor: '#f3f4f6',
-                    borderRadius: '8px',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'background-color 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#e5e7eb'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f3f4f6'
-                  }}
-                >
-                  <SquareRegular className="w-4 h-4" />
-                  Stop generating
-                </button>
               </div>
             </div>
           </div>
@@ -971,7 +946,8 @@ const Chat = () => {
             }}
           >
             <div style={{ maxWidth: '1024px', margin: '0 auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              {!messages || messages.length < 1 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                {/* Welcome Message - Always show */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
                   {/* Welcome Message */}
                   <div className={styles['animate-fade-in']} style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
@@ -1018,121 +994,16 @@ const Chat = () => {
                     </div>
                   </div>
 
-                  {/* Quick Questions */}
-                  <div style={{ marginLeft: '52px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.2s' }}>
-                      <div style={{ maxWidth: '512px' }}>
-                        <button
-                          onClick={() => {
-                            const question = 'Cum pot vorbi despre ce simt fără să-mi fie rușine?'
-                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                              ? makeApiRequestWithCosmosDB(question)
-                              : makeApiRequestWithoutCosmosDB(question)
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '16px',
-                            textAlign: 'left',
-                            backgroundColor: 'white',
-                            borderRadius: '16px',
-                            border: '1px solid #e5e7eb',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb'
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white'
-                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                        >
-                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
-                            Cum pot vorbi despre ce simt fără să-mi fie rușine?
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.4s' }}>
-                      <div style={{ maxWidth: '512px' }}>
-                        <button
-                          onClick={() => {
-                            const question = 'Cum mă pot calma înainte de un test sau o prezentare?'
-                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                              ? makeApiRequestWithCosmosDB(question)
-                              : makeApiRequestWithoutCosmosDB(question)
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '16px',
-                            textAlign: 'left',
-                            backgroundColor: 'white',
-                            borderRadius: '16px',
-                            border: '1px solid #e5e7eb',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb'
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white'
-                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                        >
-                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
-                            Cum mă pot calma înainte de un test sau o prezentare?
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                    <div className={styles['animate-fade-in']} style={{ display: 'flex', justifyContent: 'flex-end', animationDelay: '0.6s' }}>
-                      <div style={{ maxWidth: '512px' }}>
-                        <button
-                          onClick={() => {
-                            const question = 'Ce fac când mă simt copleșit de teme și responsabilități?'
-                            appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                              ? makeApiRequestWithCosmosDB(question)
-                              : makeApiRequestWithoutCosmosDB(question)
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '16px',
-                            textAlign: 'left',
-                            backgroundColor: 'white',
-                            borderRadius: '16px',
-                            border: '1px solid #e5e7eb',
-                            cursor: 'pointer',
-                            transition: 'all 0.3s',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb'
-                            e.currentTarget.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)'
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'white'
-                            e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.1)'
-                          }}
-                        >
-                          <span style={{ fontSize: '16px', color: '#1f2937' }}>
-                            Ce fac când mă simt copleșit de teme și responsabilități?
-                          </span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  {/* Quick questions moved to input area */}
                 </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                  {messages.map((message, index) => {
+                
+                {/* User Messages - Show below welcome message */}
+                {messages && messages.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    {messages.map((message, index) => {
                     if (message.role === 'user') {
                       return (
-                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <div className={styles['animate-fade-in']} key={message.id} style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', gap: '12px' }}>
                           <div style={{
                             maxWidth: '512px',
                             padding: '12px 20px',
@@ -1145,6 +1016,25 @@ const Chat = () => {
                               message={message}
                               isStreaming={false}
                               sanitizeAnswer={appStateContext?.state.frontendSettings?.sanitize_answer}
+                            />
+                          </div>
+                          <div style={{
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            backgroundColor: 'white',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e5e7eb',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            overflow: 'hidden',
+                            flexShrink: 0
+                          }}>
+                            <img 
+                              src={getPersonaAvatar(appStateContext?.state.currentPersona)} 
+                              alt="User Avatar" 
+                              style={{ width: '24px', height: '24px', objectFit: 'contain' }} 
                             />
                           </div>
                         </div>
@@ -1160,22 +1050,34 @@ const Chat = () => {
                           <div style={{
                             width: '40px',
                             height: '40px',
-                            flexShrink: 0,
+                            borderRadius: '50%',
+                            backgroundColor: 'white',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e5e7eb',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#e5e7eb',
-                            borderRadius: '50%'
+                            overflow: 'hidden',
+                            flexShrink: 0
                           }}>
-                            <img src={logo} alt="Narada Logo" style={{ width: '24px', height: '24px' }} />
+                            <img 
+                              src="/avatars/chatbot_avatar.svg" 
+                              alt="AI Assistant" 
+                              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                              onError={e => {
+                                e.currentTarget.src = '/narada-logo.svg'
+                              }}
+                            />
                           </div>
                           <div style={{
-                            maxWidth: '768px',
-                            padding: '20px',
+                            backgroundColor: '#FFFFFF',
                             borderRadius: '16px',
-                            backgroundColor: '#f3f4f6',
+                            borderTopLeftRadius: '6px',
+                            padding: '20px',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e5e7eb',
                             color: '#1f2937',
-                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                            maxWidth: '768px'
                           }}>
                             <ChatMessageComponent
                               message={{ ...message, citations: filteredCitations }}
@@ -1192,14 +1094,24 @@ const Chat = () => {
                           <div style={{
                             width: '40px',
                             height: '40px',
-                            flexShrink: 0,
+                            borderRadius: '50%',
+                            backgroundColor: 'white',
+                            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                            border: '1px solid #e5e7eb',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            backgroundColor: '#fecaca',
-                            borderRadius: '50%'
+                            overflow: 'hidden',
+                            flexShrink: 0
                           }}>
-                            <img src={logo} alt="Narada Logo" style={{ width: '24px', height: '24px' }} />
+                            <img 
+                              src="/avatars/chatbot_avatar.svg" 
+                              alt="AI Assistant" 
+                              style={{ width: '24px', height: '24px', objectFit: 'contain' }}
+                              onError={e => {
+                                e.currentTarget.src = '/narada-logo.svg'
+                              }}
+                            />
                           </div>
                           <div style={{
                             maxWidth: '768px',
@@ -1219,12 +1131,120 @@ const Chat = () => {
                     } else {
                       return null
                     }
-                  })}
-                </div>
-              )}
+                    })}
+                  </div>
+                )}
+              </div>
               <div ref={chatMessageStreamEnd} />
             </div>
           </div>
+
+          {/* Quick Questions - Horizontal Scroll */}
+          {messages.length === 0 && (
+            <div style={{
+              padding: '0 24px 16px 24px',
+              backgroundColor: 'white'
+            }}>
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                overflowX: 'auto',
+                scrollbarWidth: 'none', // Firefox
+                msOverflowStyle: 'none', // IE/Edge
+                paddingBottom: '4px'
+              }}
+              // Hide scrollbar for Webkit browsers
+              className="quick-questions-scroll"
+              >
+                <style jsx>{`
+                  .quick-questions-scroll::-webkit-scrollbar {
+                    display: none;
+                  }
+                `}</style>
+                <button
+                  onClick={() => {
+                    const question = 'Cum pot vorbi despre ce simt fără să-mi fie rușine?'
+                    const id = uuid()
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                      ? makeApiRequestWithCosmosDB(question, id)
+                      : makeApiRequestWithoutCosmosDB(question, id)
+                  }}
+                  style={{
+                    minWidth: '200px',
+                    maxWidth: '200px',
+                    padding: '12px 16px',
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    color: '#1f2937',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    whiteSpace: 'normal',
+                    textAlign: 'left',
+                    flexShrink: 0
+                  }}
+                >
+                  Cum pot vorbi despre ce simt fără să-mi fie rușine?
+                </button>
+                <button
+                  onClick={() => {
+                    const question = 'Cum mă pot calma înainte de un test sau o prezentare?'
+                    const id = uuid()
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                      ? makeApiRequestWithCosmosDB(question, id)
+                      : makeApiRequestWithoutCosmosDB(question, id)
+                  }}
+                  style={{
+                    minWidth: '200px',
+                    maxWidth: '200px',
+                    padding: '12px 16px',
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    color: '#1f2937',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    whiteSpace: 'normal',
+                    textAlign: 'left',
+                    flexShrink: 0
+                  }}
+                >
+                  Cum mă pot calma înainte de un test sau o prezentare?
+                </button>
+                <button
+                  onClick={() => {
+                    const question = 'Ce fac când mă simt copleșit de teme și responsabilități?'
+                    const id = uuid()
+                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                      ? makeApiRequestWithCosmosDB(question, id)
+                      : makeApiRequestWithoutCosmosDB(question, id)
+                  }}
+                  style={{
+                    minWidth: '200px',
+                    maxWidth: '200px',
+                    padding: '12px 16px',
+                    backgroundColor: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    lineHeight: '1.4',
+                    color: '#1f2937',
+                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                    whiteSpace: 'normal',
+                    textAlign: 'left',
+                    flexShrink: 0
+                  }}
+                >
+                  Ce fac când mă simt copleșit de teme și responsabilități?
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Input Area - FIXED AT BOTTOM */}
           <div 
@@ -1255,7 +1275,7 @@ const Chat = () => {
           {/* Chat History Panel */}
           {appStateContext?.state.isChatHistoryOpen && (
             <div className={styles['chat-history-modal-overlay']}>
-              <div className={styles['citation-modal-panel']}>
+              <div className={styles['chat-history-modal-panel']}>
                 <ChatHistoryPanel />
               </div>
               <div className={styles['chat-history-modal-backdrop']} onClick={() => appStateContext?.dispatch({ type: 'TOGGLE_CHAT_HISTORY' })} />

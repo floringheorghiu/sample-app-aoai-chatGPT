@@ -1,0 +1,30 @@
+@keyframes containerAppear {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.container {
+  animation: containerAppear 0.3s ease-out;
+  will-change: opacity;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .container {
+    animation: containerAppearReduced 0.15s ease-out;
+    will-change: opacity;
+  }
+  
+  @keyframes containerAppearReduced {
+    0% {
+      opacity: 0;
+    }
+    100% {
+      opacity: 1;
+    }
+  }
+}

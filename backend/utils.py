@@ -176,17 +176,16 @@ def format_pf_non_streaming_response(
     logging.debug(f"chatCompletion: {chatCompletion}")
     try:
         messages = []
-        if response_field_name in chatCompletion:
-            messages.append({
-                "role": "assistant",
-                "content": chatCompletion[response_field_name] 
-            })
+        assistant_message = {
+            "role": "assistant",
+            "content": chatCompletion.get(response_field_name, "")
+        }
+        # Attach citations array directly to assistant message if present
         if citations_field_name in chatCompletion:
-            citation_content= {"citations": chatCompletion[citations_field_name]}
-            messages.append({ 
-                "role": "tool",
-                "content": json.dumps(citation_content)
-            })
+            assistant_message["citations"] = chatCompletion[citations_field_name]
+        else:
+            assistant_message["citations"] = []
+        messages.append(assistant_message)
 
         response_obj = {
             "id": chatCompletion["id"],

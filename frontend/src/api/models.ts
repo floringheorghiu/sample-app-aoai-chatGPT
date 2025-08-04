@@ -45,6 +45,8 @@ export type ChatMessage = {
   date: string
   feedback?: Feedback
   context?: string
+  // Only present for assistant messages
+  citations?: Citation[];
 }
 
 export type ExecResults = {

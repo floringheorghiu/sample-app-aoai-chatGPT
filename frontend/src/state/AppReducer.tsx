@@ -1,5 +1,60 @@
 import { Action, AppState } from './AppProvider'
 
+// Persistence utilities (duplicated to avoid circular imports)
+const STORAGE_KEYS = {
+  PERSONA: 'narada_onboarding_persona',
+  TOPIC: 'narada_onboarding_topic',
+  COMPLETED: 'narada_onboarding_completed'
+} as const
+
+const persistenceUtils = {
+  savePersona: (persona: string | null) => {
+    try {
+      if (persona) {
+        localStorage.setItem(STORAGE_KEYS.PERSONA, persona)
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.PERSONA)
+      }
+    } catch (error) {
+      console.warn('Failed to save persona to localStorage:', error)
+    }
+  },
+
+  saveTopic: (topicLabel: string | null) => {
+    try {
+      if (topicLabel) {
+        localStorage.setItem(STORAGE_KEYS.TOPIC, topicLabel)
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.TOPIC)
+      }
+    } catch (error) {
+      console.warn('Failed to save topic to localStorage:', error)
+    }
+  },
+
+  saveCompleted: (completed: boolean) => {
+    try {
+      if (completed) {
+        localStorage.setItem(STORAGE_KEYS.COMPLETED, 'true')
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.COMPLETED)
+      }
+    } catch (error) {
+      console.warn('Failed to save completion status to localStorage:', error)
+    }
+  },
+
+  clearAll: () => {
+    try {
+      localStorage.removeItem(STORAGE_KEYS.PERSONA)
+      localStorage.removeItem(STORAGE_KEYS.TOPIC)
+      localStorage.removeItem(STORAGE_KEYS.COMPLETED)
+    } catch (error) {
+      console.warn('Failed to clear onboarding data from localStorage:', error)
+    }
+  }
+}
+
 // Define the reducer function
 export const appStateReducer = (state: AppState, action: Action): AppState => {
   switch (action.type) {
@@ -81,6 +136,56 @@ export const appStateReducer = (state: AppState, action: Action): AppState => {
           ...state.answerExecResult,
           [action.payload.answerId]: action.payload.exec_result
         }
+      }
+    // Persona actions with persistence
+    case 'SET_PERSONA':
+      persistenceUtils.savePersona(action.payload)
+      // Clear topic when persona changes as it may not be valid for new persona
+      persistenceUtils.saveTopic(null)
+      return {
+        ...state,
+        currentPersona: action.payload,
+        selectedInterest: null, // Reset interest when persona changes
+        selectedTopic: null, // Reset topic when persona changes
+        onboardingContext: null // Reset context when persona changes
+      }
+    case 'SET_INTEREST':
+      persistenceUtils.saveTopic(action.payload.label)
+      return {
+        ...state,
+        selectedInterest: action.payload
+      }
+    case 'SET_TOPIC':
+      persistenceUtils.saveTopic(action.payload.label)
+      return {
+        ...state,
+        selectedTopic: action.payload,
+        // Also update selectedInterest for compatibility
+        selectedInterest: {
+          label: action.payload.label,
+          value: action.payload.label.toLowerCase().replace(/\s+/g, '-')
+        }
+      }
+    case 'SET_ONBOARDING_CONTEXT':
+      return {
+        ...state,
+        onboardingContext: action.payload
+      }
+    case 'COMPLETE_ONBOARDING':
+      persistenceUtils.saveCompleted(true)
+      return {
+        ...state,
+        onboardingCompleted: true
+      }
+    case 'RESET_ONBOARDING':
+      persistenceUtils.clearAll()
+      return {
+        ...state,
+        currentPersona: null,
+        selectedInterest: null,
+        selectedTopic: null,
+        onboardingContext: null,
+        onboardingCompleted: false
       }
     default:
       return state

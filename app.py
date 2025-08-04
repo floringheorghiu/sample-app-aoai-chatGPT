@@ -679,16 +679,26 @@ async def update_conversation():
         ## Format the incoming message object in the "chat/completions" messages format
         ## then write it to the conversation history in cosmos
         messages = request_json["messages"]
+        # Always expect the last message to be 'assistant'.
         if len(messages) > 0 and messages[-1]["role"] == "assistant":
+            # Try to find citations in the previous message, or create an empty tool message if not present
+            tool_message = None
             if len(messages) > 1 and messages[-2].get("role", None) == "tool":
-                # write the tool message first
-                await current_app.cosmos_conversation_client.create_message(
-                    uuid=str(uuid.uuid4()),
-                    conversation_id=conversation_id,
-                    user_id=user_id,
-                    input_message=messages[-2],
-                )
-            # write the assistant message
+                tool_message = messages[-2]
+            else:
+                # Create an empty tool message if not present
+                tool_message = {
+                    "role": "tool",
+                    "content": "{\"citations\": []}"
+                }
+            # Write the tool message first
+            await current_app.cosmos_conversation_client.create_message(
+                uuid=str(uuid.uuid4()),
+                conversation_id=conversation_id,
+                user_id=user_id,
+                input_message=tool_message,
+            )
+            # Write the assistant message
             await current_app.cosmos_conversation_client.create_message(
                 uuid=messages[-1]["id"],
                 conversation_id=conversation_id,

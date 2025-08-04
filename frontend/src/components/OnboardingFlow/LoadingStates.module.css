@@ -1,0 +1,263 @@
+/* Skeleton Card Styles */
+.skeletonCard {
+  position: relative;
+  padding: 20px 16px;
+  border-radius: 12px;
+  border: 2px solid #e5e7eb;
+  background-color: white;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.skeletonCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  animation: shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  will-change: transform;
+}
+
+.skeletonRadio {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: #f3f4f6;
+}
+
+.skeletonContent {
+  width: 100%;
+  padding-right: 30px;
+}
+
+.skeletonTitle {
+  height: 16px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  margin-bottom: 8px;
+  width: 80%;
+}
+
+.skeletonText {
+  height: 12px;
+  background-color: #f3f4f6;
+  border-radius: 4px;
+  width: 60%;
+}
+
+.skeletonGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(-50%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Loading Spinner Styles */
+.spinner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner.small {
+  width: 16px;
+  height: 16px;
+}
+
+.spinner.medium {
+  width: 24px;
+  height: 24px;
+}
+
+.spinner.large {
+  width: 32px;
+  height: 32px;
+}
+
+.spinnerCircle {
+  width: 100%;
+  height: 100%;
+  border: 2px solid #f3f4f6;
+  border-top-color: #e91e63;
+  border-radius: 50%;
+  animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+}
+
+.spinner.small .spinnerCircle {
+  border-width: 1.5px;
+}
+
+.spinner.large .spinnerCircle {
+  border-width: 3px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* Loading Overlay Styles */
+.loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.loadingContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  background-color: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+.loadingMessage {
+  font-size: 16px;
+  color: #6b7280;
+  margin: 0;
+  font-family: 'Poppins', sans-serif;
+}
+
+/* Screen reader only content */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Persona-specific skeleton styles */
+.skeletonCard.elev::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(208, 51, 125, 0.1),
+    transparent
+  );
+}
+
+.skeletonCard.parinte::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 71, 115, 0.1),
+    transparent
+  );
+}
+
+.skeletonCard.profesor::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(154, 106, 225, 0.1),
+    transparent
+  );
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .skeletonCard {
+    border-width: 3px;
+  }
+  
+  .skeletonTitle,
+  .skeletonText,
+  .skeletonRadio {
+    background-color: #d1d5db;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .skeletonCard::before {
+    animation: shimmerReduced 3s ease-in-out infinite;
+    background: rgba(255, 255, 255, 0.4);
+  }
+  
+  .spinnerCircle {
+    animation: spinReduced 2s ease-in-out infinite;
+    border-top-color: transparent;
+    border-right-color: #e91e63;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  
+  @keyframes shimmerReduced {
+    0%, 50%, 100% {
+      opacity: 0.3;
+    }
+    25%, 75% {
+      opacity: 0.6;
+    }
+  }
+  
+  @keyframes spin {
+    0%, 100% {
+      transform: rotate(0deg);
+    }
+  }
+  
+  @keyframes spinReduced {
+    0%, 50%, 100% {
+      opacity: 0.3;
+    }
+    25%, 75% {
+      opacity: 1;
+    }
+  }
+}

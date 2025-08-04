@@ -3,10 +3,13 @@ import ReactDOM from 'react-dom/client'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { initializeIcons } from '@fluentui/react'
 
-import Chat from './pages/chat/Chat'
 import Layout from './pages/layout/Layout'
 import NoPage from './pages/NoPage'
 import { AppStateProvider } from './state/AppProvider'
+import { ChatWithOnboarding } from './components/ChatWithOnboarding'
+import ChatServiceTest from './components/ChatServiceTest'
+import { AssistantMessageExample } from './components/AssistantMessage/AssistantMessage.example'
+import { CitationPanelExample } from './components/CitationPanel/CitationPanel.example'
 
 import './index.css'
 
@@ -18,7 +21,10 @@ export default function App() {
       <HashRouter>
         <Routes>
           <Route path="/" element={<Layout />}>
-            <Route index element={<Chat />} />
+            <Route index element={<ChatWithOnboarding />} />
+            <Route path="/test-chatservice" element={<ChatServiceTest />} />
+            <Route path="/test-assistant-message" element={<AssistantMessageExample />} />
+            <Route path="/test-citation-panel" element={<CitationPanelExample />} />
             <Route path="*" element={<NoPage />} />
           </Route>
         </Routes>

@@ -46,14 +46,16 @@ export const historyList = async (offset = 0): Promise<Conversation[] | null> =>
         return null
       }
       const conversations: Conversation[] = await Promise.all(
-        payload.map(async (conv: any) => {
+        payload.map(async (conv: any, index: number) => {
           let convMessages: ChatMessage[] = []
+          // Add small delay to prevent overwhelming the backend
+          await new Promise(resolve => setTimeout(resolve, index * 50))
           convMessages = await historyRead(conv.id)
             .then(res => {
               return res
             })
             .catch(err => {
-              console.error('error fetching messages: ', err)
+              console.error('error fetching messages for conversation:', conv.id, err)
               return []
             })
           const conversation: Conversation = {

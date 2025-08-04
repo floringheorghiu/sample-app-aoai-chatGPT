@@ -11,10 +11,10 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/conversation': 'http://localhost:50505',
-      '/history': 'http://localhost:50505',
-      '/frontend_settings': 'http://localhost:50505',
-      '/.auth': 'http://localhost:50505'
+      '/conversation': 'http://127.0.0.1:50505',
+      '/history': 'http://127.0.0.1:50505',
+      '/frontend_settings': 'http://127.0.0.1:50505',
+      '/.auth': 'http://127.0.0.1:50505'
     }
   }
 })

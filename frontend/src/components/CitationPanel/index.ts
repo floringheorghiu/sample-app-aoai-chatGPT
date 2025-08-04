@@ -1,0 +1,1 @@
+export { CitationPanel, default } from './CitationPanel'
