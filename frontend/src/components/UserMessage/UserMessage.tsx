@@ -47,16 +47,17 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message, className }) 
 
   return (
     <div className={cn("flex justify-end mb-4", className)}>
-      <div className="flex items-end gap-3 max-w-[80%]">
+      <div className="flex items-end gap-3">
         <div className="flex flex-col items-end">
           {/* Message bubble with persona theming */}
           <div className={cn(
             messageClasses(true, "max-w-full break-words"),
-            "shadow-sm"
+            "shadow-sm",
+            "!text-white"
           )}>
             {/* Text content */}
             {text && (
-              <div className="text-sm font-medium whitespace-pre-wrap">
+              <div className="text-sm font-medium whitespace-pre-wrap !text-white">
                 {text}
               </div>
             )}
@@ -75,7 +76,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message, className }) 
           </div>
           
           {/* Timestamp */}
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+          <div className="flex items-center gap-1 mt-1 text-xs !text-white">
             <span>{formatTime(message.date)}</span>
           </div>
         </div>

@@ -48,24 +48,25 @@ const UserMessage: React.FC<UserMessageProps> = ({ message, className }) => {
 
   return (
     <div className={cn("flex justify-end mb-4", className)}>
-      <div className="flex items-end gap-2 max-w-[80%]">
+      <div className="flex items-end gap-2">
         <div className="flex flex-col items-end">
           <div className={cn(
             messageClasses(true, "max-w-full break-words"),
-            "shadow-sm"
+            "shadow-sm",
+            "!text-white"
           )}>
-            <div className="text-sm font-medium">
+            <div className="text-sm font-medium !text-white">
               {typeof message.content === 'string' ? message.content : message.content[0]?.text}
             </div>
           </div>
-          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
-            <Clock className="w-3 h-3" />
+          <div className="flex items-center gap-1 mt-1 text-xs !text-white">
+            <Clock className="w-3 h-3 !text-white" />
             <span>{formatTime(message.date)}</span>
           </div>
         </div>
         <div className="flex-shrink-0 mb-6">
           <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
-            <User className="w-4 h-4 text-gray-600" />
+            <User className="w-4 h-4 !text-white" />
           </div>
         </div>
       </div>
