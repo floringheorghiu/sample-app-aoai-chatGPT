@@ -179,18 +179,26 @@ const loadPersistedOnboardingState = () => {
     validCompleted
   )
 
-  // Create InterestArea from valid topic label if available
+  // Create InterestArea and QuickQuestionTopic from valid topic label if available
   let selectedInterest: InterestArea | null = null
+  let selectedTopic: QuickQuestionTopic | null = null
+  
   if (validTopicLabel) {
     selectedInterest = {
       label: validTopicLabel,
       value: validTopicLabel.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]/g, '')
+    }
+    
+    selectedTopic = {
+      label: validTopicLabel,
+      questions: [] // Will be populated from config when needed
     }
   }
 
   return {
     currentPersona: validPersona,
     selectedInterest,
+    selectedTopic,
     onboardingCompleted: validCompleted
   }
 }
@@ -216,7 +224,7 @@ const initialState: AppState = {
   selectedInterest: persistedState.selectedInterest,
   onboardingCompleted: persistedState.onboardingCompleted,
   // Enhanced onboarding initial state
-  selectedTopic: null,
+  selectedTopic: persistedState.selectedTopic,
   onboardingContext: null,
 }
 

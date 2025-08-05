@@ -5,6 +5,7 @@ import { PageTransition } from './PageTransition'
 import { OnboardingErrorBoundary } from './OnboardingErrorBoundary'
 import { OnboardingData, Persona, InterestArea } from '../../types/persona'
 import { AppStateContext } from '../../state/AppProvider'
+import { QuickQuestionTopic } from '../../config/quickQuestions'
 
 interface OnboardingFlowProps {
   onComplete: (data: OnboardingData) => void
@@ -45,8 +46,15 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete }) =>
   const handleInterestSelect = (interest: InterestArea, topicLabel: string) => {
     setSelectedInterest(interest)
     
-    // Update app state
+    // Update app state - need to set both interest and topic
     appStateContext?.dispatch({ type: 'SET_INTEREST', payload: interest })
+    
+    // Create a QuickQuestionTopic object and dispatch SET_TOPIC
+    const topicObject = {
+      label: topicLabel,
+      questions: [] // This will be populated from the config when needed
+    }
+    appStateContext?.dispatch({ type: 'SET_TOPIC', payload: topicObject })
     
     const onboardingData: OnboardingData = {
       persona: selectedPersona,

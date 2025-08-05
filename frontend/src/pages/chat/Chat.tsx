@@ -14,6 +14,7 @@ import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 import styles from './Chat.module.css'
 // Removed Contoso import - using Narada logo directly
 import { XSSAllowTags } from '../../constants/sanatizeAllowables'
+import { getQuickQuestionsByIndex, getTopicIndex } from '../../config/quickQuestions'
 
 import {
   ChatMessage as BaseChatMessage,
@@ -91,6 +92,71 @@ const Chat = () => {
   const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
   const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
+
+  // Generate dynamic welcome message based on persona and topic
+  const getWelcomeMessage = (): string => {
+    const persona = appStateContext?.state.currentPersona
+    const selectedTopic = appStateContext?.state.selectedTopic
+
+    // Debug logging
+    console.log('Welcome Message Debug:', {
+      persona,
+      selectedTopic: selectedTopic?.label
+    })
+
+    // Default message if no persona/topic
+    if (!persona || !selectedTopic) {
+      return "Bun venit! Sunt asistentul tău AI Narada. Cum te pot ajuta astăzi?"
+    }
+
+    // Persona-specific greetings
+    const personaGreetings = {
+      'elev': 'elev interesat',
+      'părinte': 'părinte interesat',
+      'profesor': 'profesor interesat',
+      'incognito': 'utilizator interesat'
+    }
+
+    const personaGreeting = personaGreetings[persona] || 'utilizator interesat'
+
+    const message = `Bun venit! Sunt asistentul tău AI Narada. Văd că ești un ${personaGreeting} ${selectedTopic.label}. Cum te pot ajuta astăzi?`
+    console.log('Generated welcome message:', message)
+
+    return message
+  }
+
+  // Derive quick questions based on persona and topic
+  const getQuickQuestions = (): string[] => {
+    const persona = appStateContext?.state.currentPersona
+    const selectedTopic = appStateContext?.state.selectedTopic
+
+    // Debug logging (can be removed in production)
+    console.log('Quick Questions Debug:', {
+      persona,
+      selectedTopic: selectedTopic?.label,
+      onboardingCompleted: appStateContext?.state.onboardingCompleted,
+      messagesLength: messages.length
+    })
+
+    // Fallback if persona or topic is missing
+    if (!persona || !selectedTopic) {
+      console.log('No persona or topic available for quick questions')
+      return []
+    }
+
+    // Get topic index from the selected topic label
+    const topicIndex = getTopicIndex(persona, selectedTopic.label)
+
+    // Return questions for the specific persona and topic index
+    if (topicIndex >= 0) {
+      const questions = getQuickQuestionsByIndex(persona, topicIndex)
+      console.log(`Found ${questions.length} questions for ${persona} topic ${topicIndex}:`, questions)
+      return questions
+    }
+
+    console.log(`No valid topic index found for persona: ${persona}, topic: ${selectedTopic.label}`)
+    return []
+  }
 
   const errorDialogContentProps = {
     type: DialogType.close,
@@ -988,8 +1054,7 @@ const Chat = () => {
                         lineHeight: '1.6',
                         margin: 0
                       }}>
-                        Bun venit! Sunt asistentul tău AI Narada. Văd că ești un elev interesat cum să îmi înțeleg
-                        emoțiile și să depășesc momentele grele. Cum te pot ajuta astăzi?
+                        {getWelcomeMessage()}
                       </p>
                     </div>
                   </div>
@@ -1149,7 +1214,7 @@ const Chat = () => {
           </div>
 
           {/* Quick Questions - Horizontal Scroll */}
-          {messages.length === 0 && (
+          {messages.length === 0 && getQuickQuestions().length > 0 && (
             <div style={{
               padding: '0 24px 16px 24px'
             }}>
@@ -1159,7 +1224,8 @@ const Chat = () => {
                 overflowX: 'auto',
                 scrollbarWidth: 'none', // Firefox
                 msOverflowStyle: 'none', // IE/Edge
-                paddingBottom: '4px'
+                paddingBottom: '4px',
+                justifyContent: 'center'
               }}
                 // Hide scrollbar for Webkit browsers
                 className="quick-questions-scroll"
@@ -1169,84 +1235,34 @@ const Chat = () => {
                     display: none;
                   }
                 `}</style>
-                <button
-                  onClick={() => {
-                    const question = 'Cum pot vorbi despre ce simt fără să-mi fie rușine?'
-                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question)
-                      : makeApiRequestWithoutCosmosDB(question)
-                  }}
-                  style={{
-                    minWidth: '200px',
-                    maxWidth: '200px',
-                    padding: '12px 16px',
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    color: '#1f2937',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    whiteSpace: 'normal',
-                    textAlign: 'left',
-                    flexShrink: 0
-                  }}
-                >
-                  Cum pot vorbi despre ce simt fără să-mi fie rușine?
-                </button>
-                <button
-                  onClick={() => {
-                    const question = 'Cum mă pot calma înainte de un test sau o prezentare?'
-                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question)
-                      : makeApiRequestWithoutCosmosDB(question)
-                  }}
-                  style={{
-                    minWidth: '200px',
-                    maxWidth: '200px',
-                    padding: '12px 16px',
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    color: '#1f2937',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    whiteSpace: 'normal',
-                    textAlign: 'left',
-                    flexShrink: 0
-                  }}
-                >
-                  Cum mă pot calma înainte de un test sau o prezentare?
-                </button>
-                <button
-                  onClick={() => {
-                    const question = 'Ce fac când mă simt copleșit de teme și responsabilități?'
-                    appStateContext?.state.isCosmosDBAvailable?.cosmosDB
-                      ? makeApiRequestWithCosmosDB(question)
-                      : makeApiRequestWithoutCosmosDB(question)
-                  }}
-                  style={{
-                    minWidth: '200px',
-                    maxWidth: '200px',
-                    padding: '12px 16px',
-                    backgroundColor: 'white',
-                    borderRadius: '12px',
-                    border: '1px solid #e5e7eb',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    color: '#1f2937',
-                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
-                    whiteSpace: 'normal',
-                    textAlign: 'left',
-                    flexShrink: 0
-                  }}
-                >
-                  Ce fac când mă simt copleșit de teme și responsabilități?
-                </button>
+                {getQuickQuestions().map((question, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      appStateContext?.state.isCosmosDBAvailable?.cosmosDB
+                        ? makeApiRequestWithCosmosDB(question)
+                        : makeApiRequestWithoutCosmosDB(question)
+                    }}
+                    style={{
+                      minWidth: '200px',
+                      maxWidth: '200px',
+                      padding: '12px 16px',
+                      backgroundColor: 'white',
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      lineHeight: '1.4',
+                      color: '#1f2937',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                      whiteSpace: 'normal',
+                      textAlign: 'left',
+                      flexShrink: 0
+                    }}
+                  >
+                    {question}
+                  </button>
+                ))}
               </div>
             </div>
           )}

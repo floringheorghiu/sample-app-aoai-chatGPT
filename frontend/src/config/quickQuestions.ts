@@ -146,3 +146,18 @@ export const getQuickQuestionsForTopic = (persona: string, topicLabel: string): 
   const topic = getTopicByLabel(persona, topicLabel)
   return topic?.questions || []
 }
+
+// Helper function to get quick questions by persona and topic index (0-3)
+export const getQuickQuestionsByIndex = (persona: string, topicIndex: number): string[] => {
+  const topics = getTopicsForPersona(persona)
+  if (topicIndex >= 0 && topicIndex < topics.length) {
+    return topics[topicIndex].questions || []
+  }
+  return []
+}
+
+// Helper function to get topic index from topic label
+export const getTopicIndex = (persona: string, topicLabel: string): number => {
+  const topics = getTopicsForPersona(persona)
+  return topics.findIndex(topic => topic.label === topicLabel)
+}
