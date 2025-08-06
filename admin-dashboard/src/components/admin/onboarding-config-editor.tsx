@@ -25,9 +25,9 @@ interface ValidationError {
 }
 
 const personaOptions: { id: PersonaKey; label: string; description: string }[] = [
-  { id: "child", label: "Child", description: "Configuration for child users" },
-  { id: "parent", label: "Parent", description: "Configuration for parent users" },
-  { id: "teacher", label: "Teacher", description: "Configuration for teacher users" },
+  { id: "child", label: "Copil", description: "Configurare pentru utilizatorii copii" },
+  { id: "parent", label: "Părinte", description: "Configurare pentru utilizatorii părinți" },
+  { id: "teacher", label: "Profesor", description: "Configurare pentru utilizatorii profesori" },
 ]
 
 export function OnboardingConfigEditor({
@@ -436,7 +436,7 @@ export function OnboardingConfigEditor({
           </CardDescription>
         </CardHeader>
         <CardContent className="text-center text-destructive">
-          Failed to load onboarding configuration.
+          Nu s-a putut încărca configurația de onboarding.
         </CardContent>
       </Card>
     )
@@ -451,22 +451,22 @@ export function OnboardingConfigEditor({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-foreground">Onboarding Configuration Editor</CardTitle>
+              <CardTitle className="text-foreground">Editor Configurare Onboarding</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Configure onboarding questions and topics for each persona.
+                Configurează întrebările și subiectele de onboarding pentru fiecare persona.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {hasUnsavedChanges && (
                 <div className="flex items-center gap-1 text-sm text-yellow-600">
                   <AlertCircle className="w-4 h-4" />
-                  Unsaved changes
+                  Modificări nesalvate
                 </div>
               )}
               {!hasUnsavedChanges && originalConfig && (
                 <div className="flex items-center gap-1 text-sm text-green-600">
                   <CheckCircle className="w-4 h-4" />
-                  Saved
+                  Salvat
                 </div>
               )}
             </div>
@@ -478,14 +478,14 @@ export function OnboardingConfigEditor({
             <div className="p-4 border border-destructive/20 bg-destructive/10 rounded-md">
               <div className="flex items-center gap-2 mb-2">
                 <AlertCircle className="w-4 h-4 text-destructive" />
-                <span className="font-medium text-destructive">Validation Errors:</span>
+                <span className="font-medium text-destructive">Erori de Validare:</span>
               </div>
               <ul className="text-sm text-destructive space-y-1">
                 {validationErrors.slice(0, 5).map((error, index) => (
                   <li key={index}>• {error.message}</li>
                 ))}
                 {validationErrors.length > 5 && (
-                  <li>• ... and {validationErrors.length - 5} more errors</li>
+                  <li>• ... și încă {validationErrors.length - 5} erori</li>
                 )}
               </ul>
             </div>
@@ -495,7 +495,7 @@ export function OnboardingConfigEditor({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <Label htmlFor="persona-select" className="text-foreground font-medium">
-                Select Persona ({Object.keys(config).length} total)
+                Selectează Persona ({Object.keys(config).length} total)
               </Label>
               <div className="flex gap-2">
                 <Button
@@ -504,7 +504,7 @@ export function OnboardingConfigEditor({
                   onClick={() => setShowAddPersonaDialog(true)}
                 >
                   <Users className="w-4 h-4 mr-2" />
-                  Add Persona
+                  Adaugă Persona
                 </Button>
                 {Object.keys(config).length > 1 && (
                   <Button
@@ -514,7 +514,7 @@ export function OnboardingConfigEditor({
                     className="text-destructive hover:text-destructive"
                   >
                     <MinusCircle className="w-4 h-4 mr-2" />
-                    Remove
+                    Elimină
                   </Button>
                 )}
               </div>
@@ -522,7 +522,7 @@ export function OnboardingConfigEditor({
             
             <Select value={selectedPersona} onValueChange={(value) => setSelectedPersona(value as PersonaKey)}>
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a persona" />
+                <SelectValue placeholder="Selectează o persona" />
               </SelectTrigger>
               <SelectContent>
                 {Object.keys(config).map((persona) => {
@@ -533,7 +533,7 @@ export function OnboardingConfigEditor({
                       <div className="flex items-center justify-between w-full">
                         <span>{personaOption?.label || persona}</span>
                         <span className="text-xs text-muted-foreground ml-2">
-                          {topicCount} topic{topicCount !== 1 ? 's' : ''}
+                          {topicCount} subiect{topicCount !== 1 ? 'e' : ''}
                         </span>
                       </div>
                     </SelectItem>
@@ -547,9 +547,9 @@ export function OnboardingConfigEditor({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-md font-semibold text-foreground">
-                Topics for {personaOptions.find(p => p.id === selectedPersona)?.label || selectedPersona}
+                Subiecte pentru {personaOptions.find(p => p.id === selectedPersona)?.label || selectedPersona}
                 {personaErrors.length > 0 && (
-                  <span className="text-destructive ml-2">({personaErrors.length} errors)</span>
+                  <span className="text-destructive ml-2">({personaErrors.length} erori)</span>
                 )}
               </h3>
               <Button
@@ -559,21 +559,21 @@ export function OnboardingConfigEditor({
                 disabled={isSaving}
               >
                 <PlusCircle className="w-4 h-4 mr-2" />
-                Add Topic
+                Adaugă Subiect
               </Button>
             </div>
             
             {currentPersonaTopics.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>No topics configured for this persona.</p>
+                <p>Nu sunt configurate subiecte pentru această persona.</p>
                 <Button
                   variant="outline"
                   onClick={() => addTopic(selectedPersona)}
                   className="mt-4"
                 >
                   <PlusCircle className="w-4 h-4 mr-2" />
-                  Add First Topic
+                  Adaugă Primul Subiect
                 </Button>
               </div>
             ) : (
@@ -586,9 +586,9 @@ export function OnboardingConfigEditor({
                       <CardContent className="p-0 space-y-4">
                         <div className="flex justify-between items-start">
                           <h4 className="font-medium text-foreground">
-                            Topic #{topicIndex + 1}
+                            Subiect #{topicIndex + 1}
                             {topicErrors.length > 0 && (
-                              <span className="text-destructive ml-2 text-sm">({topicErrors.length} errors)</span>
+                              <span className="text-destructive ml-2 text-sm">({topicErrors.length} erori)</span>
                             )}
                           </h4>
                           <div className="flex gap-2">
@@ -615,28 +615,28 @@ export function OnboardingConfigEditor({
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor={`topic-label-${topicIndex}`} className="text-foreground">
-                              Topic Label *
+                              Etichetă Subiect *
                             </Label>
                             <Input
                               id={`topic-label-${topicIndex}`}
                               value={topic.label}
                               onChange={(e) => handleTopicChange(selectedPersona, topicIndex, "label", e.target.value)}
                               className={`mt-1 ${topicErrors.some(e => e.field === 'label') ? 'border-destructive' : ''}`}
-                              placeholder="Enter topic label..."
+                              placeholder="Introdu eticheta subiectului..."
                               disabled={isSaving}
                             />
                           </div>
                           
                           <div>
                             <Label htmlFor={`warmup-prompt-${topicIndex}`} className="text-foreground">
-                              Warmup Prompt *
+                              Prompt de Încălzire *
                             </Label>
                             <Textarea
                               id={`warmup-prompt-${topicIndex}`}
                               value={topic.warmup_prompt}
                               onChange={(e) => handleTopicChange(selectedPersona, topicIndex, "warmup_prompt", e.target.value)}
                               className={`mt-1 ${topicErrors.some(e => e.field === 'warmup_prompt') ? 'border-destructive' : ''}`}
-                              placeholder="Enter warmup prompt..."
+                              placeholder="Introdu promptul de încălzire..."
                               rows={3}
                               disabled={isSaving}
                             />
@@ -644,7 +644,7 @@ export function OnboardingConfigEditor({
                           
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                              <Label className="text-foreground">Quick Questions *</Label>
+                              <Label className="text-foreground">Întrebări Rapide *</Label>
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -653,7 +653,7 @@ export function OnboardingConfigEditor({
                                 className="h-7 text-xs"
                               >
                                 <PlusCircle className="w-3 h-3 mr-1" />
-                                Add
+                                Adaugă
                               </Button>
                             </div>
                             {topic.quick_questions.map((question, qIndex) => (
@@ -663,7 +663,7 @@ export function OnboardingConfigEditor({
                                   onChange={(e) =>
                                     handleTopicChange(selectedPersona, topicIndex, "quick_questions", e.target.value, qIndex)
                                   }
-                                  placeholder={`Quick question ${qIndex + 1}...`}
+                                  placeholder={`Întrebare rapidă ${qIndex + 1}...`}
                                   className={`${topicErrors.some(e => e.field === 'quick_questions' && e.message.includes(`question ${qIndex + 1}`)) ? 'border-destructive' : ''}`}
                                   disabled={isSaving}
                                 />
@@ -698,12 +698,12 @@ export function OnboardingConfigEditor({
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
+                  Se salvează...
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save Configuration
+                  Salvează Configurația
                 </>
               )}
             </Button>
@@ -714,7 +714,7 @@ export function OnboardingConfigEditor({
               disabled={isLoading || isSaving || !hasUnsavedChanges}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
+              Resetează
             </Button>
 
             <Button
@@ -723,7 +723,7 @@ export function OnboardingConfigEditor({
               disabled={isLoading || !config}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              Exportă
             </Button>
 
             <Button
@@ -732,14 +732,14 @@ export function OnboardingConfigEditor({
               disabled={isLoading || isSaving}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import
+              Importă
             </Button>
           </div>
 
           {/* Auto-save indicator */}
           {autoSaveInterval > 0 && (
             <p className="text-xs text-muted-foreground">
-              Auto-save enabled (every {Math.round(autoSaveInterval / 1000)} seconds)
+              Salvare automată activată (la fiecare {Math.round(autoSaveInterval / 1000)} secunde)
             </p>
           )}
         </CardContent>
@@ -749,20 +749,20 @@ export function OnboardingConfigEditor({
       <Dialog open={showAddPersonaDialog} onOpenChange={setShowAddPersonaDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add New Persona</DialogTitle>
+            <DialogTitle>Adaugă Persona Nouă</DialogTitle>
             <DialogDescription>
-              Create a new persona with default configuration.
+              Creează o persona nouă cu configurația implicită.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="new-persona-name">Persona Name</Label>
+              <Label htmlFor="new-persona-name">Nume Persona</Label>
               <Input
                 id="new-persona-name"
                 value={newPersonaName}
                 onChange={(e) => setNewPersonaName(e.target.value)}
-                placeholder="Enter persona name..."
+                placeholder="Introdu numele personei..."
                 className="mt-2"
               />
             </div>
@@ -770,13 +770,13 @@ export function OnboardingConfigEditor({
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddPersonaDialog(false)}>
-              Cancel
+              Anulează
             </Button>
             <Button 
               onClick={addPersona}
               disabled={!newPersonaName.trim()}
             >
-              Add Persona
+              Adaugă Persona
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -786,35 +786,35 @@ export function OnboardingConfigEditor({
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import Configuration</DialogTitle>
+            <DialogTitle>Importă Configurația</DialogTitle>
             <DialogDescription>
-              Paste or edit the JSON configuration to import.
+              Lipește sau editează configurația JSON pentru import.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="import-config">Configuration JSON:</Label>
+              <Label htmlFor="import-config">JSON Configurație:</Label>
               <Textarea
                 id="import-config"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 rows={12}
                 className="mt-2 font-mono text-sm"
-                placeholder="Paste JSON configuration here..."
+                placeholder="Lipește configurația JSON aici..."
               />
             </div>
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Cancel
+              Anulează
             </Button>
             <Button 
               onClick={handleImport}
               disabled={!importText.trim()}
             >
-              Import
+              Importă
             </Button>
           </DialogFooter>
         </DialogContent>

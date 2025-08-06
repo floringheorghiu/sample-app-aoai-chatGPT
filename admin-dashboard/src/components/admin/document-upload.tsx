@@ -53,10 +53,10 @@ export function DocumentUpload({
             onIngestionComplete?.(currentJobId, status.status === 'completed')
             
             if (status.status === 'completed') {
-              toast.success("Document ingestion completed successfully!")
+              toast.success("Procesarea documentelor s-a finalizat cu succes!")
               setSelectedFiles([]) // Clear files after successful ingestion
             } else {
-              toast.error(`Document ingestion failed: ${status.error || 'Unknown error'}`)
+              toast.error(`Procesarea documentelor a eșuat: ${status.error || 'Eroare necunoscută'}`)
             }
             
             if (jobPollingRef.current) {
@@ -106,7 +106,7 @@ export function DocumentUpload({
 
   const addFiles = (files: File[]) => {
     if (selectedFiles.length + files.length > maxFiles) {
-      toast.error(`Maximum ${maxFiles} files allowed`)
+      toast.error(`Maxim ${maxFiles} fișiere permise`)
       return
     }
 
@@ -138,7 +138,7 @@ export function DocumentUpload({
 
     if (validFiles.length > 0) {
       setSelectedFiles(prev => [...prev, ...validFiles])
-      toast.success(`${validFiles.length} file(s) added for upload`)
+      toast.success(`${validFiles.length} fișier(e) adăugat(e) pentru încărcare`)
     }
 
     // Clear input
@@ -172,7 +172,7 @@ export function DocumentUpload({
   const handleUploadAll = async () => {
     const filesToUpload = selectedFiles.filter(f => f.status === "pending")
     if (filesToUpload.length === 0) {
-      toast.warning("No files to upload")
+      toast.warning("Nu există fișiere de încărcat")
       return
     }
 
@@ -202,12 +202,12 @@ export function DocumentUpload({
       const errorCount = results.filter(r => r.status === "error").length
 
       if (successCount > 0) {
-        toast.success(`${successCount} file(s) uploaded successfully`)
+        toast.success(`${successCount} fișier(e) încărcat(e) cu succes`)
         await loadUploadedFiles() // Refresh uploaded files list
       }
       
       if (errorCount > 0) {
-        toast.error(`${errorCount} file(s) failed to upload`)
+        toast.error(`${errorCount} fișier(e) nu au putut fi încărcate`)
       }
 
       onUploadComplete?.(results)
@@ -221,7 +221,7 @@ export function DocumentUpload({
   const handleTriggerIngestion = async () => {
     const uploadedFiles = selectedFiles.filter(f => f.status === "success")
     if (uploadedFiles.length === 0) {
-      toast.warning("No successfully uploaded files to ingest")
+      toast.warning("Nu există fișiere încărcate cu succes pentru procesare")
       return
     }
 
@@ -236,7 +236,7 @@ export function DocumentUpload({
       if (jobId) {
         setCurrentJobId(jobId)
         setShowJobDialog(true)
-        toast.success("Document ingestion started")
+        toast.success("Procesarea documentelor a început")
       } else {
         throw new Error("Failed to start ingestion job")
       }
@@ -253,9 +253,9 @@ export function DocumentUpload({
         setIsIngesting(false)
         setCurrentJobId(null)
         setShowJobDialog(false)
-        toast.success("Job cancelled successfully")
+        toast.success("Procesarea a fost anulată cu succes")
       } else {
-        toast.error("Failed to cancel job")
+        toast.error("Nu s-a putut anula procesarea")
       }
     }
   }
@@ -265,9 +265,9 @@ export function DocumentUpload({
       const success = await adminApiService.deleteUploadedFile(filePath)
       if (success) {
         await loadUploadedFiles()
-        toast.success("File deleted successfully")
+        toast.success("Fișierul a fost șters cu succes")
       } else {
-        toast.error("Failed to delete file")
+        toast.error("Nu s-a putut șterge fișierul")
       }
     } catch (error) {
       toast.error(`Delete failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
@@ -282,15 +282,15 @@ export function DocumentUpload({
     <>
       <Card className="border-primary/20">
         <CardHeader>
-          <CardTitle className="text-foreground">Document Upload & Ingestion</CardTitle>
+          <CardTitle className="text-foreground">Încărcare și Procesare Documente</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Upload documents to be processed by the AI assistant. Supported formats: {allowedFileTypes.join(', ')}
+            Încarcă documente pentru a fi procesate de asistentul AI. Formate suportate: {allowedFileTypes.join(', ')}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* File Selection Area */}
           <div>
-            <h3 className="text-md font-semibold text-foreground mb-3">Select Files</h3>
+            <h3 className="text-md font-semibold text-foreground mb-3">Selectează Fișiere</h3>
             <div
               className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
                 isDragOver 
@@ -312,10 +312,10 @@ export function DocumentUpload({
               />
               <UploadCloud className="w-10 h-10 mx-auto text-primary mb-3" />
               <p className="text-foreground/70">
-                Drag and drop files here or click to select
+                Trage și plasează fișierele aici sau fă clic pentru a selecta
               </p>
               <p className="text-xs text-muted-foreground mt-1">
-                {allowedFileTypes.join(', ')} (max {adminApiService.formatFileSize(maxFileSize)}, up to {maxFiles} files)
+                {allowedFileTypes.join(', ')} (max {adminApiService.formatFileSize(maxFileSize)}, până la {maxFiles} fișiere)
               </p>
             </div>
           </div>
@@ -325,7 +325,7 @@ export function DocumentUpload({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-md font-semibold text-foreground">
-                  Selected Files ({selectedFiles.length})
+                  Fișiere Selectate ({selectedFiles.length})
                 </h3>
                 {hasUploadErrors && (
                   <Button
@@ -334,7 +334,7 @@ export function DocumentUpload({
                     onClick={() => setSelectedFiles(prev => prev.filter(f => f.status !== "error"))}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Clear Errors
+                    Șterge Erorile
                   </Button>
                 )}
               </div>
@@ -395,7 +395,7 @@ export function DocumentUpload({
                     Uploading...
                   </>
                 ) : (
-                  `Upload ${selectedFiles.filter(f => f.status === "pending").length} File(s)`
+                  `Încarcă ${selectedFiles.filter(f => f.status === "pending").length} Fișier(e)`
                 )}
               </Button>
             </div>
@@ -404,7 +404,7 @@ export function DocumentUpload({
           {/* Ingestion Section */}
           <div className="pt-4 border-t border-border">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-md font-semibold text-foreground">Trigger Ingestion</h3>
+              <h3 className="text-md font-semibold text-foreground">Declanșează Procesarea</h3>
               <Button
                 variant="outline"
                 size="sm"
@@ -418,7 +418,7 @@ export function DocumentUpload({
             {uploadedFilesList.length > 0 && (
               <div className="mb-4">
                 <p className="text-sm text-muted-foreground mb-2">
-                  Previously uploaded files ({uploadedFilesList.length}):
+                  Fișiere încărcate anterior ({uploadedFilesList.length}):
                 </p>
                 <div className="space-y-2 max-h-32 overflow-y-auto">
                   {uploadedFilesList.map((file, index) => (
@@ -453,24 +453,24 @@ export function DocumentUpload({
               {isIngesting ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Running Ingestion...
+                  Rulează Procesarea...
                 </>
               ) : (
                 <>
                   <Play className="w-4 h-4 mr-2" />
-                  Run Ingestion
+                  Rulează Procesarea
                 </>
               )}
             </Button>
             
             {!allFilesUploaded && uploadedFilesList.length === 0 && selectedFiles.length > 0 && (
               <p className="text-sm text-destructive mt-2">
-                All files must be uploaded successfully before ingestion.
+                Toate fișierele trebuie încărcate cu succes înainte de procesare.
               </p>
             )}
             {selectedFiles.length === 0 && uploadedFilesList.length === 0 && (
               <p className="text-sm text-muted-foreground mt-2">
-                Upload files to trigger ingestion.
+                Încarcă fișiere pentru a declanșa procesarea.
               </p>
             )}
           </div>
@@ -481,13 +481,13 @@ export function DocumentUpload({
       <Dialog open={showJobDialog} onOpenChange={setShowJobDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Document Ingestion Progress</DialogTitle>
+            <DialogTitle>Progresul Procesării Documentelor</DialogTitle>
             <DialogDescription>
               {jobStatus?.status === 'completed' 
-                ? 'Ingestion completed successfully!'
+                ? 'Procesarea s-a finalizat cu succes!'
                 : jobStatus?.status === 'failed'
-                ? 'Ingestion failed'
-                : 'Processing your documents...'}
+                ? 'Procesarea a eșuat'
+                : 'Se procesează documentele...'}
             </DialogDescription>
           </DialogHeader>
           
@@ -506,7 +506,7 @@ export function DocumentUpload({
               
               {jobStatus.progress.length > 0 && (
                 <div className="space-y-2">
-                  <span className="text-sm font-medium">Progress:</span>
+                  <span className="text-sm font-medium">Progres:</span>
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {jobStatus.progress.slice(-5).map((progress, index) => (
                       <div key={index} className="text-xs p-2 bg-muted rounded">
@@ -523,7 +523,7 @@ export function DocumentUpload({
               
               {jobStatus.error && (
                 <div className="p-3 bg-destructive/10 border border-destructive/20 rounded">
-                  <p className="text-sm text-destructive font-medium">Error:</p>
+                  <p className="text-sm text-destructive font-medium">Eroare:</p>
                   <p className="text-sm text-destructive mt-1">{jobStatus.error}</p>
                 </div>
               )}
@@ -533,11 +533,11 @@ export function DocumentUpload({
           <DialogFooter>
             {isIngesting ? (
               <Button variant="outline" onClick={handleCancelJob}>
-                Cancel Job
+                Anulează Procesarea
               </Button>
             ) : (
               <Button onClick={() => setShowJobDialog(false)}>
-                Close
+                Închide
               </Button>
             )}
           </DialogFooter>

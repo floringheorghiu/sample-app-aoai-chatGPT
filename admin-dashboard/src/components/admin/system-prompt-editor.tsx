@@ -172,7 +172,7 @@ export function SystemPromptEditor({
     setHasUnsavedChanges(false)
     updateCounts(originalPrompt)
     setValidationError(null)
-    toast.success("Changes reset")
+    toast.success("Modificările au fost resetate")
   }
 
   const handleCopyToClipboard = async () => {
@@ -268,22 +268,22 @@ export function SystemPromptEditor({
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-foreground">System Prompt Editor</CardTitle>
+              <CardTitle className="text-foreground">Editor Prompt Sistem</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Configure the main prompt that guides the AI assistant's behavior.
+                Configurează promptul principal care ghidează comportamentul asistentului AI.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               {hasUnsavedChanges && (
                 <div className="flex items-center gap-1 text-sm text-yellow-600">
                   <AlertCircle className="w-4 h-4" />
-                  Unsaved changes
+                  Modificări nesalvate
                 </div>
               )}
               {lastSaved && !hasUnsavedChanges && (
                 <div className="flex items-center gap-1 text-sm text-green-600">
                   <CheckCircle className="w-4 h-4" />
-                  Saved
+                  Salvat
                 </div>
               )}
             </div>
@@ -293,12 +293,12 @@ export function SystemPromptEditor({
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="system-prompt" className="text-foreground">
-                System Prompt
+                Prompt Sistem
               </Label>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>Words: {wordCount}</span>
+                <span>Cuvinte: {wordCount}</span>
                 <span className={getCharacterCountColor()}>
-                  Characters: {characterCount}/{maxLength}
+                  Caractere: {characterCount}/{maxLength}
                 </span>
               </div>
             </div>
@@ -316,7 +316,7 @@ export function SystemPromptEditor({
                 className={`min-h-[200px] font-mono text-sm ${
                   validationError ? 'border-destructive' : ''
                 }`}
-                placeholder="Enter the system prompt that will guide the AI assistant's behavior..."
+                placeholder="Introdu promptul de sistem care va ghida comportamentul asistentului AI..."
                 disabled={isSaving}
               />
             )}
@@ -330,7 +330,7 @@ export function SystemPromptEditor({
             
             {lastSaved && (
               <p className="text-xs text-muted-foreground">
-                Last saved: {lastSaved.toLocaleString()}
+                Ultima salvare: {lastSaved.toLocaleString('ro-RO')}
               </p>
             )}
           </div>
@@ -345,12 +345,12 @@ export function SystemPromptEditor({
               {isSaving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Saving...
+                  Se salvează...
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  Salvează
                 </>
               )}
             </Button>
@@ -361,7 +361,7 @@ export function SystemPromptEditor({
               disabled={isLoading || isSaving || !hasUnsavedChanges}
             >
               <RotateCcw className="w-4 h-4 mr-2" />
-              Reset
+              Resetează
             </Button>
 
             <Button
@@ -370,7 +370,7 @@ export function SystemPromptEditor({
               disabled={isLoading || !prompt.trim()}
             >
               <Copy className="w-4 h-4 mr-2" />
-              Copy
+              Copiază
             </Button>
 
             <Button
@@ -379,7 +379,7 @@ export function SystemPromptEditor({
               disabled={isLoading || !prompt.trim()}
             >
               <Download className="w-4 h-4 mr-2" />
-              Export
+              Exportă
             </Button>
 
             <Button
@@ -388,7 +388,7 @@ export function SystemPromptEditor({
               disabled={isLoading || isSaving}
             >
               <Upload className="w-4 h-4 mr-2" />
-              Import
+              Importă
             </Button>
 
             <Button
@@ -397,14 +397,14 @@ export function SystemPromptEditor({
               disabled={isLoading || isSaving}
             >
               <History className="w-4 h-4 mr-2" />
-              Restore
+              Restaurează
             </Button>
           </div>
 
           {/* Auto-save indicator */}
           {autoSaveInterval > 0 && (
             <p className="text-xs text-muted-foreground">
-              Auto-save enabled (every {Math.round(autoSaveInterval / 1000)} seconds)
+              Salvare automată activată (la fiecare {Math.round(autoSaveInterval / 1000)} secunde)
             </p>
           )}
         </CardContent>
@@ -423,29 +423,29 @@ export function SystemPromptEditor({
       <Dialog open={showRestoreDialog} onOpenChange={setShowRestoreDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Restore System Prompt</DialogTitle>
+            <DialogTitle>Restaurează Prompt Sistem</DialogTitle>
             <DialogDescription>
-              Restore the system prompt from a previous backup. This will overwrite the current prompt.
+              Restaurează promptul de sistem dintr-o copie de rezervă anterioară. Aceasta va suprascrie promptul curent.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Backup and restore functionality requires server-side implementation.
-              This feature will be available once backup storage is configured.
+              Funcționalitatea de backup și restaurare necesită implementare pe server.
+              Această funcție va fi disponibilă odată ce stocarea backup-urilor este configurată.
             </p>
             
             <div className="p-4 border border-border rounded-md bg-muted/50">
-              <p className="text-sm font-medium mb-2">Available Backups:</p>
+              <p className="text-sm font-medium mb-2">Backup-uri Disponibile:</p>
               <p className="text-sm text-muted-foreground">
-                No backups found. Backups are created automatically when you save changes.
+                Nu s-au găsit backup-uri. Backup-urile sunt create automat când salvezi modificări.
               </p>
             </div>
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowRestoreDialog(false)}>
-              Cancel
+              Anulează
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -455,40 +455,40 @@ export function SystemPromptEditor({
       <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Import System Prompt</DialogTitle>
+            <DialogTitle>Importă Prompt Sistem</DialogTitle>
             <DialogDescription>
-              Review the imported content before applying it to the system prompt.
+              Revizuiește conținutul importat înainte de a-l aplica la promptul de sistem.
             </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-4">
             <div>
-              <Label htmlFor="import-preview">Imported Content:</Label>
+              <Label htmlFor="import-preview">Conținut Importat:</Label>
               <Textarea
                 id="import-preview"
                 value={importText}
                 onChange={(e) => setImportText(e.target.value)}
                 rows={8}
                 className="mt-2 font-mono text-sm"
-                placeholder="Imported content will appear here..."
+                placeholder="Conținutul importat va apărea aici..."
               />
             </div>
             
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span>Words: {importText.trim() ? importText.trim().split(/\s+/).length : 0}</span>
-              <span>Characters: {importText.length}</span>
+              <span>Cuvinte: {importText.trim() ? importText.trim().split(/\s+/).length : 0}</span>
+              <span>Caractere: {importText.length}</span>
             </div>
           </div>
           
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
-              Cancel
+              Anulează
             </Button>
             <Button 
               onClick={handleImportConfirm}
               disabled={!importText.trim()}
             >
-              Import
+              Importă
             </Button>
           </DialogFooter>
         </DialogContent>
