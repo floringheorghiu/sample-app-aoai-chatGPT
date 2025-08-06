@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect, useContext, useLayoutEffect, Fragment } from 'react'
-import { CommandBarButton, IconButton, Dialog, DialogType, Stack } from '@fluentui/react'
-import { SquareRegular, ShieldLockRegular, ErrorCircleRegular } from '@fluentui/react-icons'
+import { IconButton, Stack } from '@fluentui/react'
+import { ShieldLockRegular } from '@fluentui/react-icons'
 
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -8,8 +8,6 @@ import rehypeRaw from 'rehype-raw'
 import uuid from 'react-uuid'
 import { isEmpty } from 'lodash'
 import DOMPurify from 'dompurify'
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
-import { nord } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 import styles from './Chat.module.css'
 // Removed Contoso import - using Narada logo directly
@@ -32,15 +30,13 @@ import {
   ChatHistoryLoadingState,
   CosmosDBStatus,
   ErrorMessage,
-  ExecResults,
-  historyMessageFeedback
+  ExecResults
 } from '../../api'
 
 // Extend ChatMessage to allow citations for assistant messages
 type ChatMessage = BaseChatMessage & {
   citations?: Citation[]
 }
-import { Answer } from '../../components/Answer'
 import { QuestionInput } from '../../components/QuestionInput'
 import { ChatHistoryPanel } from '../../components/ChatHistory/ChatHistoryPanel'
 import ChatMessageComponent from '../../components/ChatMessage'
@@ -50,7 +46,11 @@ import { useAppPersonaTheme } from '../../hooks/usePersonaTheme'
 import { Plus, MessageSquareIcon } from 'lucide-react'
 
 // Avatar mapping based on persona
-const getPersonaAvatar = (persona: string | null) => {
+const getPersonaAvatar = (persona: string | null | undefined): string => {
+  if (!persona) {
+    return '/avatars/child_avatar.svg' // Default fallback
+  }
+
   switch (persona) {
     case 'elev':
       return '/avatars/child_avatar.svg'
@@ -81,7 +81,6 @@ const Chat = () => {
   const [showLoadingMessage, setShowLoadingMessage] = useState<boolean>(false)
   const [activeCitations, setActiveCitations] = useState<Citation[]>([])
   const [isCitationModalOpen, setIsCitationModalOpen] = useState<boolean>(false)
-  const [isIntentsPanelOpen, setIsIntentsPanelOpen] = useState<boolean>(false)
   const abortFuncs = useRef([] as AbortController[])
   const [showAuthMessage, setShowAuthMessage] = useState<boolean | undefined>()
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -90,7 +89,6 @@ const Chat = () => {
   const [clearingChat, setClearingChat] = useState<boolean>(false)
   const [hideErrorDialog, { toggle: toggleErrorDialog }] = useBoolean(true)
   const [errorMsg, setErrorMsg] = useState<ErrorMessage | null>()
-  const [logo, setLogo] = useState('')
   const [answerId, setAnswerId] = useState<string>('')
 
   // Generate dynamic welcome message based on persona and topic
@@ -158,27 +156,10 @@ const Chat = () => {
     return []
   }
 
-  const errorDialogContentProps = {
-    type: DialogType.close,
-    title: errorMsg?.title,
-    closeButtonAriaLabel: 'Close',
-    subText: errorMsg?.subtitle
-  }
 
-  const modalProps = {
-    titleAriaId: 'labelId',
-    subtitleAriaId: 'subTextId',
-    isBlocking: true,
-    styles: { main: { maxWidth: 450 } }
-  }
 
   const [ASSISTANT, TOOL, ERROR] = ['assistant', 'tool', 'error']
   const NO_CONTENT_ERROR = 'No content in messages object.'
-
-  const restartOnboarding = () => {
-    localStorage.clear()
-    window.location.href = '/'
-  }
 
   useEffect(() => {
     if (
@@ -196,17 +177,8 @@ const Chat = () => {
     }
   }, [appStateContext?.state.isCosmosDBAvailable])
 
-  const handleErrorDialogClose = () => {
-    toggleErrorDialog()
-    setTimeout(() => {
-      setErrorMsg(null)
-    }, 500)
-  }
-
   useEffect(() => {
-    if (!appStateContext?.state.isLoading) {
-      setLogo(ui?.chat_logo || ui?.logo || '/narada-logo.svg')
-    }
+    // Logo is now handled directly in JSX, no need for state
   }, [appStateContext?.state.isLoading])
 
   useEffect(() => {
@@ -646,30 +618,7 @@ const Chat = () => {
     return abortController.abort()
   }
 
-  const clearChat = async () => {
-    setClearingChat(true)
-    if (appStateContext?.state.currentChat?.id && appStateContext?.state.isCosmosDBAvailable.cosmosDB) {
-      let response = await historyClear(appStateContext?.state.currentChat.id)
-      if (!response.ok) {
-        setErrorMsg({
-          title: 'Error clearing current chat',
-          subtitle: 'Please try again. If the problem persists, please contact the site administrator.'
-        })
-        toggleErrorDialog()
-      } else {
-        appStateContext?.dispatch({
-          type: 'DELETE_CURRENT_CHAT_MESSAGES',
-          payload: appStateContext?.state.currentChat.id
-        })
-        appStateContext?.dispatch({ type: 'UPDATE_CHAT_HISTORY', payload: appStateContext?.state.currentChat })
-        setActiveCitations([])
-        setIsCitationModalOpen(false)
-        setIsIntentsPanelOpen(false)
-        setMessages([])
-      }
-    }
-    setClearingChat(false)
-  }
+  // clearChat function removed as it's not used
 
   const tryGetRaiPrettyError = (errorMessage: string) => {
     try {
@@ -730,16 +679,8 @@ const Chat = () => {
     setProcessMessages(messageStatus.Processing)
     setMessages([])
     setIsCitationModalOpen(false)
-    setIsIntentsPanelOpen(false)
     setActiveCitations([])
     appStateContext?.dispatch({ type: 'UPDATE_CURRENT_CHAT', payload: null })
-    setProcessMessages(messageStatus.Done)
-  }
-
-  const stopGenerating = () => {
-    abortFuncs.current.forEach(a => a.abort())
-    setShowLoadingMessage(false)
-    setIsLoading(false)
     setProcessMessages(messageStatus.Done)
   }
 
@@ -827,9 +768,7 @@ const Chat = () => {
     }
   }
 
-  const onShowExecResult = (answerId: string) => {
-    setIsIntentsPanelOpen(true)
-  }
+  // onShowExecResult function removed as it's not used
 
   const onViewSource = (citation: Citation) => {
     if (citation.url && !citation.url.includes('blob.core')) {
@@ -849,24 +788,7 @@ const Chat = () => {
     return []
   }
 
-  const parsePlotFromMessage = (message: ChatMessage) => {
-    if (message?.role && message?.role === 'tool' && typeof message?.content === 'string') {
-      try {
-        const execResults = JSON.parse(message.content) as AzureSqlServerExecResults
-        const codeExecResult = execResults.all_exec_results.at(-1)?.code_exec_result
-
-        if (codeExecResult === undefined) {
-          return null
-        }
-        return codeExecResult.toString()
-      } catch {
-        return null
-      }
-      // const execResults = JSON.parse(message.content) as AzureSqlServerExecResults;
-      // return execResults.all_exec_results.at(-1)?.code_exec_result;
-    }
-    return null
-  }
+  // parsePlotFromMessage function removed as it's not used
 
   const disabledButton = () => {
     return (
@@ -1230,7 +1152,7 @@ const Chat = () => {
                 // Hide scrollbar for Webkit browsers
                 className="quick-questions-scroll"
               >
-                <style jsx>{`
+                <style>{`
                   .quick-questions-scroll::-webkit-scrollbar {
                     display: none;
                   }
@@ -1324,7 +1246,7 @@ const Chat = () => {
                     />
                   </Stack>
                   <div className={styles.citationPanelBody}>
-                    {activeCitations.map((citation, index) => (
+                    {activeCitations.map((citation) => (
                       <Fragment key={uuid()}>
                         <h5
                           className={styles.citationPanelTitle}

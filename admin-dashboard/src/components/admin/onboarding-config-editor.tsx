@@ -54,7 +54,7 @@ export function OnboardingConfigEditor({
         const fetchedConfig = await adminApiService.getOnboardingConfig()
         setConfig(fetchedConfig)
         setOriginalConfig(JSON.parse(JSON.stringify(fetchedConfig)))
-        
+
         // Set first available persona as selected
         const availablePersonas = Object.keys(fetchedConfig) as PersonaKey[]
         if (availablePersonas.length > 0) {
@@ -85,7 +85,10 @@ export function OnboardingConfigEditor({
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
       if (hasUnsavedChanges) {
         e.preventDefault()
-        e.returnValue = ''
+        // Modern browsers ignore the returnValue, but we set it for compatibility
+        const message = 'You have unsaved changes. Are you sure you want to leave?'
+        e.returnValue = message
+        return message
       }
     }
 
@@ -152,7 +155,7 @@ export function OnboardingConfigEditor({
   const updateConfig = useCallback((updatedConfig: OnboardingConfig) => {
     setConfig(updatedConfig)
     setHasUnsavedChanges(JSON.stringify(updatedConfig) !== JSON.stringify(originalConfig))
-    
+
     const errors = validateConfig(updatedConfig)
     setValidationErrors(errors)
   }, [originalConfig, validateConfig])
@@ -193,13 +196,13 @@ export function OnboardingConfigEditor({
 
   const addTopic = (persona: PersonaKey) => {
     if (!config) return
-    
+
     const newTopic: OnboardingTopic = {
       label: "",
       warmup_prompt: "",
       quick_questions: ["", "", ""],
     }
-    
+
     const updatedConfig = {
       ...config,
       [persona]: {
@@ -207,19 +210,19 @@ export function OnboardingConfigEditor({
         topics: [...config[persona].topics, newTopic],
       },
     }
-    
+
     updateConfig(updatedConfig)
     toast.success("New topic added")
   }
 
   const removeTopic = (persona: PersonaKey, topicIndex: number) => {
     if (!config) return
-    
+
     if (config[persona].topics.length <= 1) {
       toast.error("Cannot remove the last topic for a persona")
       return
     }
-    
+
     const updatedTopics = config[persona].topics.filter((_, i) => i !== topicIndex)
     const updatedConfig = {
       ...config,
@@ -228,20 +231,20 @@ export function OnboardingConfigEditor({
         topics: updatedTopics,
       },
     }
-    
+
     updateConfig(updatedConfig)
     toast.success("Topic removed")
   }
 
   const addQuickQuestion = (persona: PersonaKey, topicIndex: number) => {
     if (!config) return
-    
+
     const topic = config[persona].topics[topicIndex]
     if (topic.quick_questions.length >= 5) {
       toast.error("Maximum 5 quick questions allowed per topic")
       return
     }
-    
+
     const updatedQuestions = [...topic.quick_questions, ""]
     handleTopicChange(persona, topicIndex, "quick_questions", updatedQuestions)
     toast.success("Quick question added")
@@ -249,13 +252,13 @@ export function OnboardingConfigEditor({
 
   const removeQuickQuestion = (persona: PersonaKey, topicIndex: number, questionIndex: number) => {
     if (!config) return
-    
+
     const topic = config[persona].topics[topicIndex]
     if (topic.quick_questions.length <= 1) {
       toast.error("Each topic must have at least one quick question")
       return
     }
-    
+
     const updatedQuestions = topic.quick_questions.filter((_, i) => i !== questionIndex)
     handleTopicChange(persona, topicIndex, "quick_questions", updatedQuestions)
     toast.success("Quick question removed")
@@ -263,14 +266,14 @@ export function OnboardingConfigEditor({
 
   const addPersona = () => {
     if (!config || !newPersonaName.trim()) return
-    
+
     const personaKey = newPersonaName.toLowerCase().replace(/\s+/g, '_') as PersonaKey
-    
+
     if (config[personaKey]) {
       toast.error("Persona already exists")
       return
     }
-    
+
     const updatedConfig = {
       ...config,
       [personaKey]: {
@@ -281,7 +284,7 @@ export function OnboardingConfigEditor({
         }]
       }
     }
-    
+
     updateConfig(updatedConfig)
     setSelectedPersona(personaKey)
     setShowAddPersonaDialog(false)
@@ -291,22 +294,22 @@ export function OnboardingConfigEditor({
 
   const removePersona = (persona: PersonaKey) => {
     if (!config) return
-    
+
     const personaCount = Object.keys(config).length
     if (personaCount <= 1) {
       toast.error("Cannot remove the last persona")
       return
     }
-    
+
     const updatedConfig = { ...config }
     delete updatedConfig[persona]
-    
+
     // Switch to first available persona
     const remainingPersonas = Object.keys(updatedConfig) as PersonaKey[]
     if (remainingPersonas.length > 0) {
       setSelectedPersona(remainingPersonas[0])
     }
-    
+
     updateConfig(updatedConfig)
     toast.success(`Persona "${persona}" removed`)
   }
@@ -324,9 +327,9 @@ export function OnboardingConfigEditor({
       await adminApiService.updateOnboardingConfig(config)
       setOriginalConfig(JSON.parse(JSON.stringify(config)))
       setHasUnsavedChanges(false)
-      
+
       onSave?.(config)
-      
+
       if (isAutoSave) {
         toast.success("Onboarding config auto-saved", { duration: 2000 })
       } else {
@@ -352,7 +355,7 @@ export function OnboardingConfigEditor({
 
   const handleExport = () => {
     if (!config) return
-    
+
     const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
@@ -369,12 +372,12 @@ export function OnboardingConfigEditor({
     try {
       const importedConfig = JSON.parse(importText) as OnboardingConfig
       const errors = validateConfig(importedConfig)
-      
+
       if (errors.length > 0) {
         toast.error(`Invalid configuration: ${errors[0].message}`)
         return
       }
-      
+
       updateConfig(importedConfig)
       setShowImportDialog(false)
       setImportText("")
@@ -386,14 +389,14 @@ export function OnboardingConfigEditor({
 
   const duplicateTopic = (persona: PersonaKey, topicIndex: number) => {
     if (!config) return
-    
+
     const topicToDuplicate = config[persona].topics[topicIndex]
     const duplicatedTopic: OnboardingTopic = {
       label: `${topicToDuplicate.label} (Copy)`,
       warmup_prompt: topicToDuplicate.warmup_prompt,
       quick_questions: [...topicToDuplicate.quick_questions]
     }
-    
+
     const updatedConfig = {
       ...config,
       [persona]: {
@@ -405,7 +408,7 @@ export function OnboardingConfigEditor({
         ],
       },
     }
-    
+
     updateConfig(updatedConfig)
     toast.success("Topic duplicated")
   }
@@ -519,8 +522,8 @@ export function OnboardingConfigEditor({
                 )}
               </div>
             </div>
-            
-            <Select value={selectedPersona} onValueChange={(value) => setSelectedPersona(value as PersonaKey)}>
+
+            <Select value={selectedPersona} onValueChange={(value: string) => setSelectedPersona(value as PersonaKey)}>
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Selectează o persona" />
               </SelectTrigger>
@@ -562,7 +565,7 @@ export function OnboardingConfigEditor({
                 Adaugă Subiect
               </Button>
             </div>
-            
+
             {currentPersonaTopics.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
@@ -580,7 +583,7 @@ export function OnboardingConfigEditor({
               <div className="space-y-4">
                 {currentPersonaTopics.map((topic, topicIndex) => {
                   const topicErrors = personaErrors.filter(e => e.topicIndex === topicIndex)
-                  
+
                   return (
                     <Card key={topicIndex} className={`p-4 ${topicErrors.length > 0 ? 'border-destructive/50' : 'border-border'}`}>
                       <CardContent className="p-0 space-y-4">
@@ -611,7 +614,7 @@ export function OnboardingConfigEditor({
                             </Button>
                           </div>
                         </div>
-                        
+
                         <div className="space-y-4">
                           <div>
                             <Label htmlFor={`topic-label-${topicIndex}`} className="text-foreground">
@@ -626,7 +629,7 @@ export function OnboardingConfigEditor({
                               disabled={isSaving}
                             />
                           </div>
-                          
+
                           <div>
                             <Label htmlFor={`warmup-prompt-${topicIndex}`} className="text-foreground">
                               Prompt de Încălzire *
@@ -641,7 +644,7 @@ export function OnboardingConfigEditor({
                               disabled={isSaving}
                             />
                           </div>
-                          
+
                           <div className="space-y-2">
                             <div className="flex items-center justify-between">
                               <Label className="text-foreground">Întrebări Rapide *</Label>
@@ -754,7 +757,7 @@ export function OnboardingConfigEditor({
               Creează o persona nouă cu configurația implicită.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="new-persona-name">Nume Persona</Label>
@@ -767,12 +770,12 @@ export function OnboardingConfigEditor({
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowAddPersonaDialog(false)}>
               Anulează
             </Button>
-            <Button 
+            <Button
               onClick={addPersona}
               disabled={!newPersonaName.trim()}
             >
@@ -791,7 +794,7 @@ export function OnboardingConfigEditor({
               Lipește sau editează configurația JSON pentru import.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div>
               <Label htmlFor="import-config">JSON Configurație:</Label>
@@ -805,12 +808,12 @@ export function OnboardingConfigEditor({
               />
             </div>
           </div>
-          
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowImportDialog(false)}>
               Anulează
             </Button>
-            <Button 
+            <Button
               onClick={handleImport}
               disabled={!importText.trim()}
             >
