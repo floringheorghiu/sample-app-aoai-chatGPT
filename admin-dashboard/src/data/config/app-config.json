@@ -1,0 +1,10 @@
+{
+  "pythonPath": "python3",
+  "scriptsPath": "../scripts",
+  "uploadsPath": "./data/uploads",
+  "configPath": "./data/config",
+  "logsPath": "./data/logs",
+  "maxFileSize": 10485760,
+  "allowedFileTypes": [".pdf", ".docx", ".txt"],
+  "mockMode": true
+}

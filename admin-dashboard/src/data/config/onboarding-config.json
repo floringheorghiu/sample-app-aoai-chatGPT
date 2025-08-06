@@ -1,0 +1,41 @@
+{
+  "parent": {
+    "topics": [
+      {
+        "label": "Child Safety Online",
+        "warmup_prompt": "Let's discuss keeping children safe online",
+        "quick_questions": [
+          "What are the main online safety risks for children?",
+          "How can I set up parental controls?",
+          "What should I do if my child encounters inappropriate content?"
+        ]
+      }
+    ]
+  },
+  "teacher": {
+    "topics": [
+      {
+        "label": "Educational Technology",
+        "warmup_prompt": "Let's explore educational technology tools",
+        "quick_questions": [
+          "What are the best educational apps for my classroom?",
+          "How can I integrate technology into my lessons?",
+          "What are effective online assessment tools?"
+        ]
+      }
+    ]
+  },
+  "child": {
+    "topics": [
+      {
+        "label": "Learning and Fun",
+        "warmup_prompt": "Let's learn something fun together!",
+        "quick_questions": [
+          "Can you help me with my homework?",
+          "What are some fun educational games?",
+          "How can I learn about science?"
+        ]
+      }
+    ]
+  }
+}
