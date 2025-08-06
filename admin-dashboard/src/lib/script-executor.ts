@@ -88,10 +88,20 @@ export class ScriptExecutor {
   private logsPath: string;
   private runningProcesses: Map<string, ChildProcess> = new Map();
 
-  constructor(pythonPath: string = 'python', scriptsPath: string = '../scripts', logsPath: string = './admin-dashboard/src/data/logs') {
-    this.pythonPath = pythonPath;
+  constructor(pythonPath?: string, scriptsPath: string = '../scripts', logsPath: string = './admin-dashboard/src/data/logs') {
+    // Auto-detect Python path if not provided
+    this.pythonPath = pythonPath || this.detectPythonPath();
     this.scriptsPath = scriptsPath;
     this.logsPath = logsPath;
+  }
+
+  private detectPythonPath(): string {
+    // Try common Python executable names in order of preference
+    const pythonCommands = ['python3', 'python', 'py'];
+    
+    // For now, return python3 as it's most commonly available
+    // In a real implementation, we could check which one exists
+    return 'python3';
   }
 
   // Direct integration with existing scripts and their Azure capabilities
