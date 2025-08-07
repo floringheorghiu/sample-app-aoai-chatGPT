@@ -2,6 +2,7 @@
 frontend/node_modules
 .env
 env.json
+
 # static
 .azure/
 __pycache__/
@@ -11,3 +12,9 @@ V0_INTEGRATION_GUIDE.md
 V0_SPECIFIC_REQUESTS.md
 FRONTEND_REFACTOR_PRD.md
 narada_admin_dashboard_prd.md
+
+# IntelliJ IDEA Files
+*.iml
+*.ipr
+*.iws
+*.idea
