@@ -60,7 +60,7 @@ export class AdminApiService {
       }
 
       const result = await response.json()
-      
+
       // Simulate progress for better UX
       if (onProgress) {
         onProgress(100)
@@ -74,7 +74,7 @@ export class AdminApiService {
   }
 
   async uploadMultipleDocuments(
-    files: File[], 
+    files: File[],
     onProgress?: (fileIndex: number, progress: number) => void
   ): Promise<UploadedFile[]> {
     const results: UploadedFile[] = files.map(file => ({
@@ -86,13 +86,13 @@ export class AdminApiService {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       results[i].status = "uploading"
-      
+
       try {
         const success = await this.uploadDocument(file, (progress) => {
           results[i].progress = progress
           onProgress?.(i, progress)
         })
-        
+
         results[i].status = success ? "success" : "error"
         results[i].message = success ? "Uploaded successfully" : "Upload failed"
       } catch (error) {
@@ -107,7 +107,7 @@ export class AdminApiService {
   async listUploadedFiles(): Promise<Array<{ name: string; path: string; size: number; lastModified: string }>> {
     try {
       const response = await fetch(`${this.baseUrl}/upload-doc`)
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
         console.warn('Failed to list files:', errorData.error)
@@ -172,7 +172,7 @@ export class AdminApiService {
   async getJobStatus(jobId: string): Promise<JobStatus | null> {
     try {
       const response = await fetch(`${this.baseUrl}/ingest-docs?jobId=${encodeURIComponent(jobId)}`)
-      
+
       if (!response.ok) {
         return null
       }
@@ -202,13 +202,17 @@ export class AdminApiService {
   // System Prompt Methods
   async getSystemPrompt(): Promise<SystemPromptConfig> {
     try {
+      console.log('Fetching system prompt from:', `${this.baseUrl}/config/system-prompt`)
       const response = await fetch(`${this.baseUrl}/config/system-prompt`)
-      
+
+      console.log('Response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error('Failed to get system prompt')
+        throw new Error(`Failed to get system prompt: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
+      console.log('System prompt result:', result)
       return result.config
     } catch (error) {
       console.error('Get system prompt error:', error)
@@ -262,13 +266,17 @@ export class AdminApiService {
   // Onboarding Configuration Methods
   async getOnboardingConfig(): Promise<OnboardingConfig> {
     try {
+      console.log('Fetching onboarding config from:', `${this.baseUrl}/config/onboarding`)
       const response = await fetch(`${this.baseUrl}/config/onboarding`)
-      
+
+      console.log('Onboarding response status:', response.status, response.statusText)
+
       if (!response.ok) {
-        throw new Error('Failed to get onboarding config')
+        throw new Error(`Failed to get onboarding config: ${response.status} ${response.statusText}`)
       }
 
       const result = await response.json()
+      console.log('Onboarding config result:', result)
       return result.config
     } catch (error) {
       console.error('Get onboarding config error:', error)

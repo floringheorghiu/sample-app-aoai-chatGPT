@@ -22,10 +22,11 @@ const getMimeType = (filePath: string): string => {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   try {
-    const filePath = params.path.join('/');
+    const resolvedParams = await params;
+    const filePath = resolvedParams.path.join('/');
     const fullPath = path.join(process.cwd(), 'src/data', filePath);
     
     // Security check: ensure the path is within the data directory

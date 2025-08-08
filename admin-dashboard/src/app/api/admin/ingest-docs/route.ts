@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ScriptExecutor, ProcessingConfig, ExecutionProgress } from '@/lib/script-executor'
 import { FileManager, LocalStorageProvider } from '@/lib/file-manager'
+import { MultilingualPipelineCoordinator, MultilingualProgress, PipelineResult } from '@/lib/multilingual-pipeline-coordinator'
+import { LocalConfigProvider } from '@/lib/config-manager'
 import path from 'path'
 
 // In-memory job tracking (in production, use Redis or database)
 interface JobStatus {
   id: string
   status: 'started' | 'running' | 'completed' | 'failed'
-  progress: ExecutionProgress[]
+  progress: (ExecutionProgress | MultilingualProgress)[]
   result?: any
   error?: string
   startTime: Date
   endTime?: Date
+  isMultilingual?: boolean
 }
 
 const activeJobs = new Map<string, JobStatus>()
@@ -20,6 +23,7 @@ interface IngestionRequest {
   files?: string[]
   config?: Partial<ProcessingConfig>
   scriptType?: 'data_preparation' | 'prepdocs' | 'batch'
+  useMultilingualPipeline?: boolean
 }
 
 interface IngestionResponse {
@@ -53,12 +57,16 @@ export async function POST(request: NextRequest): Promise<NextResponse<Ingestion
     // Generate unique job ID
     const jobId = `ingest_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
+    // Determine if we should use multilingual pipeline
+    const useMultilingualPipeline = body.useMultilingualPipeline ?? true // Default to multilingual pipeline
+
     // Initialize job status
     const jobStatus: JobStatus = {
       id: jobId,
       status: 'started',
       progress: [],
-      startTime: new Date()
+      startTime: new Date(),
+      isMultilingual: useMultilingualPipeline
     }
     activeJobs.set(jobId, jobStatus)
 
@@ -80,6 +88,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<Ingestion
         jobId,
         error: validationError
       }, { status: 400 })
+    }
+
+    // Validate multilingual configuration if using multilingual pipeline
+    if (useMultilingualPipeline) {
+      const multilingualValidationError = await validateMultilingualConfig()
+      if (multilingualValidationError) {
+        jobStatus.status = 'failed'
+        jobStatus.error = multilingualValidationError
+        jobStatus.endTime = new Date()
+        
+        return NextResponse.json({
+          success: false,
+          jobId,
+          error: multilingualValidationError
+        }, { status: 400 })
+      }
     }
 
     // If specific files are provided, update data_path
@@ -129,16 +153,29 @@ export async function POST(request: NextRequest): Promise<NextResponse<Ingestion
     }
 
     // Start ingestion process asynchronously
-    processIngestion(jobId, config, body.scriptType || 'prepdocs', scriptExecutor)
-      .catch(error => {
-        console.error(`Job ${jobId} failed:`, error)
-        const job = activeJobs.get(jobId)
-        if (job) {
-          job.status = 'failed'
-          job.error = error.message
-          job.endTime = new Date()
-        }
-      })
+    if (useMultilingualPipeline) {
+      processMultilingualIngestion(jobId, body.files || [], config)
+        .catch(error => {
+          console.error(`Multilingual job ${jobId} failed:`, error)
+          const job = activeJobs.get(jobId)
+          if (job) {
+            job.status = 'failed'
+            job.error = error.message
+            job.endTime = new Date()
+          }
+        })
+    } else {
+      processIngestion(jobId, config, body.scriptType || 'prepdocs', scriptExecutor)
+        .catch(error => {
+          console.error(`Job ${jobId} failed:`, error)
+          const job = activeJobs.get(jobId)
+          if (job) {
+            job.status = 'failed'
+            job.error = error.message
+            job.endTime = new Date()
+          }
+        })
+    }
 
     return NextResponse.json({
       success: true,
@@ -162,6 +199,31 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     const { searchParams } = new URL(request.url)
     const jobId = searchParams.get('jobId')
+    const checkPipelineStatus = searchParams.get('pipelineStatus')
+
+    // Check multilingual pipeline status
+    if (checkPipelineStatus === 'true') {
+      try {
+        const configProvider = new LocalConfigProvider()
+        const coordinator = new MultilingualPipelineCoordinator(configProvider)
+        const readiness = await coordinator.validatePipelineReadiness()
+        
+        return NextResponse.json({
+          success: true,
+          pipelineStatus: {
+            isReady: readiness.isReady,
+            errors: readiness.errors,
+            warnings: readiness.warnings,
+            configuration: coordinator.getConfiguration()
+          }
+        })
+      } catch (error) {
+        return NextResponse.json({
+          success: false,
+          error: `Failed to check pipeline status: ${error instanceof Error ? error.message : 'Unknown error'}`
+        }, { status: 500 })
+      }
+    }
 
     if (!jobId) {
       // Return all active jobs
@@ -170,7 +232,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         status: job.status,
         startTime: job.startTime,
         endTime: job.endTime,
-        progressCount: job.progress.length
+        progressCount: job.progress.length,
+        isMultilingual: job.isMultilingual
       }))
 
       return NextResponse.json({
@@ -196,7 +259,8 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         result: job.result,
         error: job.error,
         startTime: job.startTime,
-        endTime: job.endTime
+        endTime: job.endTime,
+        isMultilingual: job.isMultilingual
       }
     })
 
@@ -238,9 +302,18 @@ export async function DELETE(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 })
     }
 
-    // Try to kill the process
-    const scriptExecutor = new ScriptExecutor()
-    const killed = await scriptExecutor.killProcess(jobId)
+    let killed = false
+
+    if (job.isMultilingual) {
+      // Cancel multilingual pipeline job
+      const configProvider = new LocalConfigProvider()
+      const coordinator = new MultilingualPipelineCoordinator(configProvider)
+      killed = await coordinator.cancelPipeline(jobId)
+    } else {
+      // Try to kill the traditional script process
+      const scriptExecutor = new ScriptExecutor()
+      killed = await scriptExecutor.killProcess(jobId)
+    }
 
     if (killed) {
       job.status = 'failed'
@@ -286,6 +359,23 @@ function validateConfig(config: ProcessingConfig): string | null {
   }
 
   return null
+}
+
+// Helper function to validate multilingual pipeline configuration
+async function validateMultilingualConfig(): Promise<string | null> {
+  try {
+    const configProvider = new LocalConfigProvider()
+    const coordinator = new MultilingualPipelineCoordinator(configProvider)
+    
+    const readiness = await coordinator.validatePipelineReadiness()
+    if (!readiness.isReady) {
+      return `Multilingual pipeline configuration error: ${readiness.errors.join(', ')}`
+    }
+
+    return null
+  } catch (error) {
+    return `Failed to validate multilingual configuration: ${error instanceof Error ? error.message : 'Unknown error'}`
+  }
 }
 
 // Async function to process ingestion
@@ -352,6 +442,79 @@ async function processIngestion(
   } catch (error) {
     job.status = 'failed'
     job.error = error instanceof Error ? error.message : 'Unknown processing error'
+    job.endTime = new Date()
+    throw error
+  }
+}
+
+// Process documents using the multilingual RAG pipeline
+async function processMultilingualIngestion(
+  jobId: string,
+  files: string[],
+  config: ProcessingConfig
+): Promise<void> {
+  const job = activeJobs.get(jobId)
+  if (!job) return
+
+  try {
+    job.status = 'running'
+
+    // Initialize multilingual pipeline coordinator
+    const configProvider = new LocalConfigProvider()
+    const coordinator = new MultilingualPipelineCoordinator(configProvider)
+
+    // Validate pipeline readiness
+    const readiness = await coordinator.validatePipelineReadiness()
+    if (!readiness.isReady) {
+      throw new Error(`Multilingual pipeline not ready: ${readiness.errors.join(', ')}`)
+    }
+
+    // Progress callback to track multilingual execution
+    const progressCallback = (progress: MultilingualProgress) => {
+      job.progress.push(progress)
+    }
+
+    // Execute multilingual pipeline
+    const result: PipelineResult = await coordinator.executeMultilingualPipeline(
+      files,
+      progressCallback
+    )
+
+    // Convert pipeline result to expected format
+    job.result = {
+      success: result.success,
+      exitCode: result.success ? 0 : 1,
+      stdout: `Multilingual pipeline completed. Processed ${result.documentsProcessed} documents, created ${result.chunksCreated} chunks, indexed ${result.documentsIndexed} documents. Languages detected: ${result.languagesDetected.join(', ')}. Translated ${result.translatedDocuments} documents.`,
+      stderr: result.errors.map(e => e.message).join('\n'),
+      duration: result.duration,
+      scriptUsed: 'multilingual-pipeline',
+      azureResourcesCreated: [`Search Index: ${config.index_name}`],
+      multilingualStats: {
+        documentsProcessed: result.documentsProcessed,
+        chunksCreated: result.chunksCreated,
+        documentsIndexed: result.documentsIndexed,
+        languagesDetected: result.languagesDetected,
+        translatedDocuments: result.translatedDocuments,
+        errors: result.errors
+      }
+    }
+
+    job.status = result.success ? 'completed' : 'failed'
+    job.error = result.success ? undefined : result.errors.map(e => e.message).join('; ')
+    job.endTime = new Date()
+
+    // Clean up old jobs (keep only last 100)
+    if (activeJobs.size > 100) {
+      const oldestJobs = Array.from(activeJobs.entries())
+        .sort(([,a], [,b]) => a.startTime.getTime() - b.startTime.getTime())
+        .slice(0, activeJobs.size - 100)
+      
+      oldestJobs.forEach(([id]) => activeJobs.delete(id))
+    }
+
+  } catch (error) {
+    job.status = 'failed'
+    job.error = error instanceof Error ? error.message : 'Unknown multilingual processing error'
     job.endTime = new Date()
     throw error
   }

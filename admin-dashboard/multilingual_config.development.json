@@ -1,0 +1,53 @@
+{
+  "simulation_mode": true,
+  "azure_translator": {
+    "endpoint": "https://simulation.translator.local/",
+    "subscription_key": "simulation-key",
+    "region": "simulation-region",
+    "api_version": "3.0"
+  },
+  "azure_storage": {
+    "account_name": "simulation-storage",
+    "account_key": "simulation-key",
+    "container_name": "simulation-container"
+  },
+  "azure_document_intelligence": {
+    "endpoint": "https://simulation.docintel.local/",
+    "key": "simulation-key"
+  },
+  "azure_search": {
+    "service_name": "simulation-search",
+    "admin_key": "simulation-key",
+    "index_name": "simulation-index"
+  },
+  "azure_openai": {
+    "endpoint": "https://simulation.openai.local/",
+    "key": "simulation-key",
+    "embedding_deployment": "text-embedding-ada-002"
+  },
+  "processing_settings": {
+    "chunk_size": 1000,
+    "rate_limit_delay": 0.01,
+    "timeout": 10,
+    "max_retries": 1,
+    "chunk_overlap": 50,
+    "min_chunk_size": 25,
+    "max_concurrent_files": 2,
+    "translation_enabled": true,
+    "force_translation": false,
+    "supported_formats": ["pdf", "docx", "txt", "md", "html"]
+  },
+  "simulation_settings": {
+    "language_detection_delay_ms": 500,
+    "translation_delay_ms": 1000,
+    "chunking_delay_ms": 800,
+    "embedding_delay_ms": 1200,
+    "indexing_delay_ms": 600,
+    "default_detected_language": "ro",
+    "translation_success_rate": 0.95,
+    "processing_success_rate": 0.98,
+    "chunks_per_document": 5,
+    "enable_random_errors": false,
+    "supported_languages": ["ro", "en", "fr", "de", "es", "it", "pt", "nl", "pl", "ru"]
+  }
+}

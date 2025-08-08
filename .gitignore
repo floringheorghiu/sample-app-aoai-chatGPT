@@ -1,13 +1,46 @@
 .venv
 frontend/node_modules
 .env
+.env.local
+.env.development
+.env.production
 env.json
 # static
 .azure/
 __pycache__/
 .ipynb_checkpoints/
+
+# Credential and configuration files
+*.key
+*.pem
+*.p12
+*.pfx
+config/credentials.json
+config/
+
+# Multilingual pipeline configuration files with credentials
+multilingual_rag_pipeline/multilingual_config.json
+admin-dashboard/multilingual_config.json
+admin-dashboard/.env.local
+admin-dashboard/.env.development
+admin-dashboard/.env.production
+
+# Azure service configuration files
+azure-credentials.json
+config/azure-config.json
+
+# Development and testing files
+*.log
+*.tmp
+.DS_Store
+.vscode/settings.json
+
 # documentation
 V0_INTEGRATION_GUIDE.md
 V0_SPECIFIC_REQUESTS.md
 FRONTEND_REFACTOR_PRD.md
-narada_admin_dashboard_prd.md
+narada_admin_dashboard_prd.md# 
+Configuration files with secrets
+multilingual_rag_pipeline/multilingual_config.json.template
+multilingual_rag_pipeline/multilingual_config.json
+*.config.json

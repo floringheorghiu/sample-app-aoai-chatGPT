@@ -323,5 +323,14 @@ export class ConfigManager {
         await this.configProvider.saveConfig(config.name, config.data);
       }
     }
+
+    // Initialize multilingual configuration if available
+    try {
+      const { MultilingualConfigurationManager } = await import('./multilingual-configuration-manager');
+      const multilingualManager = new MultilingualConfigurationManager(this.configProvider);
+      await multilingualManager.initializeDefaultMultilingualConfig();
+    } catch (error) {
+      console.warn('Multilingual configuration not available:', error);
+    }
   }
 }

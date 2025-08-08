@@ -1,0 +1,37 @@
+# Core Azure services
+azure-storage-blob>=12.19.0
+azure-ai-documentintelligence>=1.0.0b1
+azure-search-documents>=11.4.0
+azure-identity>=1.15.0
+azure-core>=1.29.0
+
+# Translation and language detection
+requests>=2.31.0
+langdetect>=1.0.9
+
+# PDF processing
+PyPDF2>=3.0.1
+pdfplumber>=0.10.0
+
+# Text processing and chunking
+tiktoken>=0.5.1
+markdown>=3.5.1
+beautifulsoup4>=4.12.2
+
+# ML and embeddings
+langchain>=0.1.0
+openai>=1.12.0
+
+# Data processing
+tqdm>=4.66.1
+
+# Environment and configuration
+python-dotenv>=1.0.0
+
+# Utilities
+fitz  # PyMuPDF for advanced PDF processing
+Pillow>=10.0.0  # Image processing
+
+# Optional: Advanced document processing
+# python-docx>=0.8.11  # For native DOCX processing
+# python-pptx>=0.6.21  # For PowerPoint processing

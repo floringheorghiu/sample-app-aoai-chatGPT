@@ -15,6 +15,7 @@ export interface StorageProvider {
   deleteFile(filePath: string): Promise<boolean>;
   getFileUrl(filePath: string): Promise<string>;
   ensureDirectory(directory: string): Promise<void>;
+  downloadFile?(filePath: string): Promise<Buffer>;
 }
 
 export class LocalStorageProvider implements StorageProvider {
@@ -107,6 +108,15 @@ export class LocalStorageProvider implements StorageProvider {
     // For local storage, return a relative URL that can be served by Next.js
     return `/api/files/${encodeURIComponent(filePath)}`;
   }
+
+  async downloadFile(filePath: string): Promise<Buffer> {
+    try {
+      const fullPath = path.join(this.basePath, filePath);
+      return await fs.readFile(fullPath);
+    } catch (error) {
+      throw new Error(`Failed to download file ${filePath}: ${error}`);
+    }
+  }
 }
 
 export class AzureBlobStorageProvider implements StorageProvider {
@@ -130,10 +140,8 @@ export class AzureBlobStorageProvider implements StorageProvider {
       this.blobServiceClient = BlobServiceClient.fromConnectionString(this.connectionString);
       this.containerClient = this.blobServiceClient.getContainerClient(this.containerName);
       
-      // Ensure container exists
-      await this.containerClient.createIfNotExists({
-        access: 'blob' // Allow public read access to blobs
-      });
+      // Ensure container exists (without public access)
+      await this.containerClient.createIfNotExists();
     } catch (error) {
       throw new Error(`Failed to initialize Azure Blob Storage: ${error}`);
     }
@@ -252,10 +260,73 @@ export class AzureBlobStorageProvider implements StorageProvider {
       // Get blob client
       const blobClient = this.containerClient.getBlobClient(blobName);
       
-      // Return the blob URL (public access)
-      return blobClient.url;
+      // Generate SAS token for secure access (valid for 1 hour)
+      const { generateBlobSASQueryParameters, BlobSASPermissions } = await import('@azure/storage-blob');
+      
+      // Extract account key from connection string for SAS generation
+      const accountKeyMatch = this.connectionString.match(/AccountKey=([^;]+)/);
+      const accountNameMatch = this.connectionString.match(/AccountName=([^;]+)/);
+      
+      if (!accountKeyMatch || !accountNameMatch) {
+        // Fallback to direct URL if we can't generate SAS
+        return blobClient.url;
+      }
+      
+      const accountName = accountNameMatch[1];
+      const accountKey = accountKeyMatch[1];
+      
+      // Create SAS token
+      const sasOptions = {
+        containerName: this.containerName,
+        blobName: blobName,
+        permissions: BlobSASPermissions.parse('r'), // Read permission only
+        startsOn: new Date(),
+        expiresOn: new Date(new Date().valueOf() + 3600 * 1000), // 1 hour from now
+      };
+      
+      const { StorageSharedKeyCredential } = await import('@azure/storage-blob');
+      const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+      
+      const sasToken = generateBlobSASQueryParameters(sasOptions, sharedKeyCredential).toString();
+      
+      // Return URL with SAS token
+      return `${blobClient.url}?${sasToken}`;
     } catch (error) {
       throw new Error(`Failed to get file URL from Azure Blob Storage: ${error}`);
+    }
+  }
+
+  async downloadFile(filePath: string): Promise<Buffer> {
+    try {
+      // Ensure clients are initialized
+      if (!this.containerClient) {
+        await this.initializeClients();
+      }
+
+      // Normalize path for blob storage
+      const blobName = filePath.replace(/\\/g, '/');
+      
+      // Get blob client
+      const blobClient = this.containerClient.getBlobClient(blobName);
+      
+      // Download the blob content
+      const downloadResponse = await blobClient.download();
+      
+      if (!downloadResponse.readableStreamBody) {
+        throw new Error('No readable stream available for blob');
+      }
+      
+      // Convert stream to buffer
+      const chunks: Buffer[] = [];
+      const stream = downloadResponse.readableStreamBody;
+      
+      return new Promise((resolve, reject) => {
+        stream.on('data', (chunk: Buffer) => chunks.push(chunk));
+        stream.on('end', () => resolve(Buffer.concat(chunks)));
+        stream.on('error', reject);
+      });
+    } catch (error) {
+      throw new Error(`Failed to download file from Azure Blob Storage: ${error}`);
     }
   }
 
@@ -307,5 +378,14 @@ export class FileManager {
   // Utility method to validate file size
   validateFileSize(file: File, maxSizeBytes: number): boolean {
     return file.size <= maxSizeBytes;
+  }
+
+  // Download file as buffer
+  async downloadFile(filePath: string): Promise<Buffer> {
+    if (this.storageProvider.downloadFile) {
+      return await this.storageProvider.downloadFile(filePath);
+    } else {
+      throw new Error('Download functionality not supported by this storage provider');
+    }
   }
 }
